@@ -1,5 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const { nodeEnv, frontendUrl } = require("./config/env");
 const authRoutes = require("./routes/authRoutes");
 const insumoRoutes = require("./routes/insumoRoutes");
 const produtoRoutes = require("./routes/produtoRoutes");
@@ -9,6 +11,23 @@ const relatorioRoutes = require("./routes/relatorioRoutes");
 
 const app = express();
 
+const LOCALHOST_ORIGIN = /^http:\/\/localhost:\d+$/;
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (nodeEnv !== "production" && LOCALHOST_ORIGIN.test(origin)) {
+        return callback(null, true);
+      }
+      if (frontendUrl && origin === frontendUrl) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origem nao permitida pelo CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
