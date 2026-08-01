@@ -77,6 +77,8 @@ model DespesaGeral {
   id          Int      @id @default(autoincrement())
   descricao   String
   valor       Decimal  @db.Decimal(12, 2)
+  categoria   String?
+  recorrente  Boolean  @default(false)
   dataDespesa DateTime @map("data_despesa")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -101,7 +103,8 @@ model Cliente {
 
 model Pedido {
   id             Int      @id @default(autoincrement())
-  clienteId      Int      @map("cliente_id")
+  clienteId      Int?     @map("cliente_id")
+  origem         String   @default("manual")
   status         String   @default("pendente")
   valorTotal     Decimal  @map("valor_total") @db.Decimal(12, 2)
   formaPagamento String?  @map("forma_pagamento")
@@ -109,7 +112,7 @@ model Pedido {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  cliente Cliente      @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  cliente Cliente?     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   itens   ItemPedido[]
 
   @@map("pedidos")
