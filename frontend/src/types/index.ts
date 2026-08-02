@@ -25,6 +25,7 @@ export interface Produto {
   id: number;
   nome: string;
   descricao: string | null;
+  imagemUrl: string | null;
   precoVenda: string;
   custoMedio: string;
   ativo: boolean;

@@ -3,11 +3,11 @@ import { useAuth } from "../../context/AuthContext";
 import { Spinner } from "../ui/Spinner";
 
 const links = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/insumos", label: "Insumos" },
-  { to: "/produtos", label: "Produtos" },
-  { to: "/despesas", label: "Despesas" },
-  { to: "/vendas", label: "Vendas" },
+  { to: "/admin", label: "Dashboard", end: true },
+  { to: "/admin/insumos", label: "Insumos" },
+  { to: "/admin/produtos", label: "Produtos" },
+  { to: "/admin/despesas", label: "Despesas" },
+  { to: "/admin/vendas", label: "Vendas" },
 ];
 
 export function ProtectedLayout() {
@@ -22,7 +22,7 @@ export function ProtectedLayout() {
   }
 
   if (!admin) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (

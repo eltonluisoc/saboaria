@@ -87,7 +87,7 @@ export function ProdutoDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/produtos" className="text-sm text-emerald-700 hover:underline">
+        <Link to="/admin/produtos" className="text-sm text-emerald-700 hover:underline">
           &larr; Voltar para produtos
         </Link>
         <h1 className="mt-1 text-2xl font-semibold text-slate-800">{produto.nome}</h1>

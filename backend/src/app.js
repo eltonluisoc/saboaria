@@ -8,6 +8,7 @@ const produtoRoutes = require("./routes/produtoRoutes");
 const despesaRoutes = require("./routes/despesaRoutes");
 const vendaRoutes = require("./routes/vendaRoutes");
 const relatorioRoutes = require("./routes/relatorioRoutes");
+const catalogoRoutes = require("./routes/catalogoRoutes");
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/admin/produtos", produtoRoutes);
 app.use("/api/admin/despesas", despesaRoutes);
 app.use("/api/admin/vendas", vendaRoutes);
 app.use("/api/admin/relatorio", relatorioRoutes);
+app.use("/api/produtos", catalogoRoutes);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

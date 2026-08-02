@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+@import "@fontsource/playfair-display/400.css";
+@import "@fontsource/playfair-display/500.css";
+@import "@fontsource/playfair-display/600.css";
+@import "@fontsource/playfair-display/400-italic.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+@theme {
+  --color-brand-dark: #2e3524;
+  --color-brand-olive: #6b7355;
+  --color-brand-cream: #f5efe1;
+  --color-brand-gold: #c9a15a;
+  --color-brand-brown: #4a3826;
+  --font-serif-brand: "Playfair Display", serif;
+  --font-sans-brand: "Inter", sans-serif;
+}
+
 html,
 body,
 #root {

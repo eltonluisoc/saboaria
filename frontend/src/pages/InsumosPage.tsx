@@ -47,7 +47,7 @@ export function InsumosPage() {
             {
               header: "Nome",
               render: (row) => (
-                <Link to={`/insumos/${row.id}`} className="font-medium text-emerald-700 hover:underline">
+                <Link to={`/admin/insumos/${row.id}`} className="font-medium text-emerald-700 hover:underline">
                   {row.nome}
                 </Link>
               ),

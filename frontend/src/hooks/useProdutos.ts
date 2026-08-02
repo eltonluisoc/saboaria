@@ -20,6 +20,7 @@ export function useProduto(id: number | undefined) {
 export interface ProdutoInput {
   nome: string;
   descricao?: string | null;
+  imagemUrl?: string | null;
   precoVenda: number;
   ativo?: boolean;
 }

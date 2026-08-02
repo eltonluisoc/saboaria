@@ -48,6 +48,7 @@ model Produto {
   id         Int      @id @default(autoincrement())
   nome       String
   descricao  String?
+  imagemUrl  String?  @map("imagem_url")
   precoVenda Decimal  @map("preco_venda") @db.Decimal(12, 2)
   custoMedio Decimal  @default(0) @map("custo_medio") @db.Decimal(12, 4)
   ativo      Boolean  @default(true)

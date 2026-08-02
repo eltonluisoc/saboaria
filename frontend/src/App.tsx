@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedLayout } from "./components/layout/ProtectedLayout";
@@ -10,6 +10,13 @@ import { ProdutosPage } from "./pages/ProdutosPage";
 import { ProdutoDetailPage } from "./pages/ProdutoDetailPage";
 import { DespesasPage } from "./pages/DespesasPage";
 import { VendasPage } from "./pages/VendasPage";
+import { CartProvider } from "./site/context/CartContext";
+import { SiteLayout } from "./site/components/SiteLayout";
+import { HomePage } from "./site/pages/HomePage";
+import { CatalogoPage } from "./site/pages/CatalogoPage";
+import { ProdutoPage } from "./site/pages/ProdutoPage";
+import { CarrinhoPage } from "./site/pages/CarrinhoPage";
+import { CheckoutPage } from "./site/pages/CheckoutPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,20 +31,39 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
+        <CartProvider>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<ProtectedLayout />}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/insumos" element={<InsumosPage />} />
-              <Route path="/insumos/:id" element={<InsumoDetailPage />} />
-              <Route path="/produtos" element={<ProdutosPage />} />
-              <Route path="/produtos/:id" element={<ProdutoDetailPage />} />
-              <Route path="/despesas" element={<DespesasPage />} />
-              <Route path="/vendas" element={<VendasPage />} />
+            {/* site público */}
+            <Route element={<SiteLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/catalogo" element={<CatalogoPage />} />
+              <Route path="/produto/:id" element={<ProdutoPage />} />
+              <Route path="/carrinho" element={<CarrinhoPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+            </Route>
+
+            {/* painel admin */}
+            <Route
+              path="/admin"
+              element={
+                <AuthProvider>
+                  <Outlet />
+                </AuthProvider>
+              }
+            >
+              <Route path="login" element={<LoginPage />} />
+              <Route element={<ProtectedLayout />}>
+                <Route index element={<DashboardPage />} />
+                <Route path="insumos" element={<InsumosPage />} />
+                <Route path="insumos/:id" element={<InsumoDetailPage />} />
+                <Route path="produtos" element={<ProdutosPage />} />
+                <Route path="produtos/:id" element={<ProdutoDetailPage />} />
+                <Route path="despesas" element={<DespesasPage />} />
+                <Route path="vendas" element={<VendasPage />} />
+              </Route>
             </Route>
           </Routes>
-        </AuthProvider>
+        </CartProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

@@ -47,7 +47,7 @@ export function ProdutosPage() {
             {
               header: "Nome",
               render: (row) => (
-                <Link to={`/produtos/${row.id}`} className="font-medium text-emerald-700 hover:underline">
+                <Link to={`/admin/produtos/${row.id}`} className="font-medium text-emerald-700 hover:underline">
                   {row.nome}
                 </Link>
               ),
@@ -104,6 +104,7 @@ export function ProdutosPage() {
 function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClose: () => void }) {
   const [nome, setNome] = useState(produto?.nome ?? "");
   const [descricao, setDescricao] = useState(produto?.descricao ?? "");
+  const [imagemUrl, setImagemUrl] = useState(produto?.imagemUrl ?? "");
   const [precoVenda, setPrecoVenda] = useState(produto?.precoVenda ?? "");
   const [ativo, setAtivo] = useState(produto?.ativo ?? true);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +119,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
       const dados = {
         nome,
         descricao: descricao || null,
+        imagemUrl: imagemUrl || null,
         precoVenda: Number(precoVenda),
         ativo,
       };
@@ -141,6 +143,12 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
           label="Descrição (opcional)"
           value={descricao ?? ""}
           onChange={(e) => setDescricao(e.target.value)}
+        />
+        <Input
+          label="URL da imagem (opcional)"
+          placeholder="https://..."
+          value={imagemUrl ?? ""}
+          onChange={(e) => setImagemUrl(e.target.value)}
         />
         <Input
           label="Preço de venda (R$)"

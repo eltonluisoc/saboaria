@@ -7,7 +7,7 @@ function parseId(param) {
 }
 
 function validarProdutoBody(body, { partial = false } = {}) {
-  const { nome, precoVenda, descricao, ativo } = body || {};
+  const { nome, precoVenda, descricao, ativo, imagemUrl } = body || {};
 
   if (!partial || nome !== undefined) {
     if (typeof nome !== "string" || !nome.trim()) {
@@ -30,6 +30,10 @@ function validarProdutoBody(body, { partial = false } = {}) {
     return "Campo 'ativo' deve ser booleano";
   }
 
+  if (imagemUrl !== undefined && imagemUrl !== null && typeof imagemUrl !== "string") {
+    return "Campo 'imagemUrl' deve ser texto";
+  }
+
   return null;
 }
 
@@ -39,12 +43,13 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, descricao, precoVenda, ativo } = req.body;
+  const { nome, descricao, precoVenda, ativo, imagemUrl } = req.body;
 
   const produto = await prisma.produto.create({
     data: {
       nome: nome.trim(),
       descricao: descricao ? descricao.trim() : null,
+      imagemUrl: imagemUrl ? imagemUrl.trim() : null,
       precoVenda,
       ativo: ativo === undefined ? true : ativo,
     },
@@ -87,12 +92,13 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, descricao, precoVenda, ativo } = req.body;
+  const { nome, descricao, precoVenda, ativo, imagemUrl } = req.body;
   const data = {};
   if (nome !== undefined) data.nome = nome.trim();
   if (descricao !== undefined) data.descricao = descricao ? descricao.trim() : null;
   if (precoVenda !== undefined) data.precoVenda = precoVenda;
   if (ativo !== undefined) data.ativo = ativo;
+  if (imagemUrl !== undefined) data.imagemUrl = imagemUrl ? imagemUrl.trim() : null;
 
   try {
     const produto = await prisma.produto.update({ where: { id }, data });

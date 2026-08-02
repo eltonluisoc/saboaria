@@ -16,7 +16,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (admin) {
-      navigate("/", { replace: true });
+      navigate("/admin", { replace: true });
     }
   }, [admin, navigate]);
 
@@ -26,7 +26,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, senha);
-      navigate("/", { replace: true });
+      navigate("/admin", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Erro ao fazer login");
     } finally {

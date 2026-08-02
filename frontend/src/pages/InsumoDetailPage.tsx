@@ -41,7 +41,7 @@ export function InsumoDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/insumos" className="text-sm text-emerald-700 hover:underline">
+        <Link to="/admin/insumos" className="text-sm text-emerald-700 hover:underline">
           &larr; Voltar para insumos
         </Link>
         <h1 className="mt-1 text-2xl font-semibold text-slate-800">{insumo.nome}</h1>
