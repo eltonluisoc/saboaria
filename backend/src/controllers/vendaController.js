@@ -1,6 +1,6 @@
-const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
+const { criarPedidoComItens } = require("../services/pedidoService");
 
 const STATUS_VALIDOS = ["pendente", "pago", "cancelado"];
 
@@ -75,41 +75,16 @@ async function criar(req, res) {
     return res.status(400).json({ error: `Produto(s) inexistente(s): ${idsFaltantes.join(", ")}` });
   }
 
-  let valorTotal = new Prisma.Decimal(0);
-  const itensData = itens.map((item) => {
-    const produto = produtosPorId.get(Number(item.produtoId));
-    const quantidade = Number(item.quantidade);
-    const subtotal = produto.precoVenda.times(quantidade);
-    valorTotal = valorTotal.plus(subtotal);
-
-    return {
-      produtoId: produto.id,
-      quantidade,
-      precoUnitario: produto.precoVenda,
-      subtotal,
-    };
-  });
-
-  const pedido = await prisma.$transaction(async (tx) => {
-    const novoPedido = await tx.pedido.create({
-      data: {
-        clienteId: clienteId ? Number(clienteId) : null,
-        origem: "manual",
-        status: status || "pago",
-        valorTotal,
-        formaPagamento: formaPagamento || null,
-      },
-    });
-
-    await tx.itemPedido.createMany({
-      data: itensData.map((item) => ({ ...item, pedidoId: novoPedido.id })),
-    });
-
-    return tx.pedido.findUnique({
-      where: { id: novoPedido.id },
-      include: { itens: { include: { produto: true } }, cliente: true },
-    });
-  });
+  const pedido = await prisma.$transaction((tx) =>
+    criarPedidoComItens(tx, {
+      clienteId,
+      origem: "manual",
+      status: status || "pago",
+      formaPagamento,
+      itens,
+      produtosPorId,
+    })
+  );
 
   return res.status(201).json(pedido);
 }

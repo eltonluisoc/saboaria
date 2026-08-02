@@ -2,7 +2,9 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCatalogo, type ProdutoPublico } from "../hooks/useCatalogo";
+import { useCriarCheckout } from "../hooks/useCheckout";
 import { Loading } from "../components/Loading";
+import { ApiError } from "../../lib/api";
 
 function formatarPreco(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -11,11 +13,12 @@ function formatarPreco(valor: number) {
 export function CheckoutPage() {
   const { itens } = useCart();
   const { data: produtos, isLoading } = useCatalogo();
+  const criarCheckout = useCriarCheckout();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [endereco, setEndereco] = useState("");
-  const [enviado, setEnviado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   if (isLoading) return <Loading />;
 
@@ -38,9 +41,18 @@ export function CheckoutPage() {
     );
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setEnviado(true);
+    setErro(null);
+    try {
+      const resultado = await criarCheckout.mutateAsync({
+        itens: itens.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
+        cliente: { nome, email, telefone: telefone || undefined, endereco },
+      });
+      window.location.href = resultado.checkoutUrl;
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : "Erro ao iniciar o pagamento");
+    }
   }
 
   return (
@@ -51,6 +63,9 @@ export function CheckoutPage() {
         <div>
           <h2 className="mb-4 font-serif-brand text-xl text-brand-dark">Seus dados</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {erro && (
+              <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{erro}</p>
+            )}
             <input
               className="w-full rounded-md border border-brand-olive/30 bg-white px-4 py-2 text-sm text-brand-brown outline-none focus:border-brand-gold"
               placeholder="Nome completo"
@@ -80,19 +95,13 @@ export function CheckoutPage() {
               required
             />
 
-            {enviado ? (
-              <p className="rounded-md bg-brand-olive/10 px-4 py-3 text-sm text-brand-brown">
-                O pagamento online chega na Fase 7, com Mercado Pago. Por enquanto essa tela é só a
-                estrutura do checkout.
-              </p>
-            ) : (
-              <button
-                type="submit"
-                className="w-full rounded-full bg-brand-gold px-8 py-3 text-sm font-semibold uppercase tracking-widest text-brand-dark transition-transform hover:scale-105"
-              >
-                Finalizar pedido
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={criarCheckout.isPending}
+              className="w-full rounded-full bg-brand-gold px-8 py-3 text-sm font-semibold uppercase tracking-widest text-brand-dark transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {criarCheckout.isPending ? "Redirecionando..." : "Ir para o pagamento"}
+            </button>
           </form>
         </div>
 

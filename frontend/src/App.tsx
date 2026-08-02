@@ -17,6 +17,7 @@ import { CatalogoPage } from "./site/pages/CatalogoPage";
 import { ProdutoPage } from "./site/pages/ProdutoPage";
 import { CarrinhoPage } from "./site/pages/CarrinhoPage";
 import { CheckoutPage } from "./site/pages/CheckoutPage";
+import { CheckoutRetornoPage } from "./site/pages/CheckoutRetornoPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/produto/:id" element={<ProdutoPage />} />
               <Route path="/carrinho" element={<CarrinhoPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/checkout/retorno" element={<CheckoutRetornoPage />} />
             </Route>
 
             {/* painel admin */}
