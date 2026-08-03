@@ -8,10 +8,16 @@ const TOKEN_TTL = "8h";
 const TOKEN_MAX_AGE_MS = 8 * 60 * 60 * 1000;
 
 function cookieOptions() {
+  const emProducao = nodeEnv === "production";
   return {
     httpOnly: true,
-    sameSite: "lax",
-    secure: nodeEnv === "production",
+    // Frontend (Vercel) e backend (Render) sao dominios diferentes em producao -
+    // isso e "cross-site" pra fins de cookie, entao precisa de SameSite=None
+    // (que por sua vez exige Secure=true, ja garantido pelo HTTPS em producao).
+    // Em dev, frontend e backend sao ambos localhost; Lax funciona e evita
+    // exigir HTTPS local.
+    sameSite: emProducao ? "none" : "lax",
+    secure: emProducao,
     maxAge: TOKEN_MAX_AGE_MS,
   };
 }
