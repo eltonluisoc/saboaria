@@ -35,7 +35,3 @@ export function useConfirmarPagamento() {
     mutationFn: (paymentId: string) => api.post<StatusPedido>("/api/checkout/confirmar", { paymentId }),
   });
 }
-
-export async function buscarStatusPedido(pedidoId: number) {
-  return api.get<StatusPedido>(`/api/checkout/${pedidoId}/status`);
-}

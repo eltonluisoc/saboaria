@@ -3,11 +3,6 @@ const { preference: preferenceClient } = require("../config/mercadopago");
 const { criarPedidoComItens, confirmarPagamento } = require("../services/pedidoService");
 const { frontendUrl, backendUrl } = require("../config/env");
 
-function parseId(param) {
-  const id = Number(param);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
 function validarCheckoutBody(body) {
   const { itens, cliente } = body || {};
 
@@ -156,22 +151,4 @@ async function confirmar(req, res) {
   }
 }
 
-async function statusPedido(req, res) {
-  const id = parseId(req.params.id);
-  if (!id) {
-    return res.status(400).json({ error: "Id invalido" });
-  }
-
-  const pedido = await prisma.pedido.findUnique({
-    where: { id },
-    select: { id: true, status: true },
-  });
-
-  if (!pedido) {
-    return res.status(404).json({ error: "Pedido nao encontrado" });
-  }
-
-  return res.json(pedido);
-}
-
-module.exports = { criar, confirmar, statusPedido };
+module.exports = { criar, confirmar };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { useConfirmarPagamento, buscarStatusPedido } from "../hooks/useCheckout";
+import { useConfirmarPagamento } from "../hooks/useCheckout";
 import { Loading } from "../components/Loading";
 import { Sprig } from "../components/Sprig";
 
@@ -18,30 +18,27 @@ export function CheckoutRetornoPage() {
 
     async function verificar() {
       const paymentId = searchParams.get("payment_id");
-      const externalReference = searchParams.get("external_reference");
+
+      // Sem payment_id nao ha nada seguro pra consultar (o status por
+      // pedido.id sequencial foi removido de proposito - permitia qualquer
+      // pessoa consultar o status de qualquer pedido so trocando o numero).
+      // Nesse caso mostramos "pendente" generico sem chamar a API.
+      if (!paymentId) {
+        if (!cancelado) setResultado("pendente");
+        return;
+      }
 
       try {
-        let status: string | undefined;
-
-        if (paymentId) {
-          const resposta = await confirmarPagamento.mutateAsync(paymentId);
-          status = resposta.status;
-        } else if (externalReference) {
-          const resposta = await buscarStatusPedido(Number(externalReference));
-          status = resposta.status;
-        }
-
+        const resposta = await confirmarPagamento.mutateAsync(paymentId);
         if (cancelado) return;
 
-        if (status === "pago") {
+        if (resposta.status === "pago") {
           limpar();
           setResultado("pago");
-        } else if (status === "cancelado") {
+        } else if (resposta.status === "cancelado") {
           setResultado("cancelado");
-        } else if (status) {
-          setResultado("pendente");
         } else {
-          setResultado("erro");
+          setResultado("pendente");
         }
       } catch {
         if (!cancelado) setResultado("erro");
