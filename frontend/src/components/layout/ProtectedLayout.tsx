@@ -8,6 +8,7 @@ const links = [
   { to: "/admin/produtos", label: "Produtos" },
   { to: "/admin/despesas", label: "Despesas" },
   { to: "/admin/vendas", label: "Vendas" },
+  { to: "/admin/pedidos", label: "Pedidos" },
 ];
 
 export function ProtectedLayout() {

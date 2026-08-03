@@ -78,6 +78,8 @@ export interface Venda {
   status: string;
   valorTotal: string;
   formaPagamento: string | null;
+  mpPreferenceId?: string | null;
+  mpPaymentId?: string | null;
   dataPedido: string;
   createdAt: string;
   updatedAt: string;

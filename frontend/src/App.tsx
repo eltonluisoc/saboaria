@@ -10,6 +10,8 @@ import { ProdutosPage } from "./pages/ProdutosPage";
 import { ProdutoDetailPage } from "./pages/ProdutoDetailPage";
 import { DespesasPage } from "./pages/DespesasPage";
 import { VendasPage } from "./pages/VendasPage";
+import { PedidosPage } from "./pages/PedidosPage";
+import { PedidoDetailPage } from "./pages/PedidoDetailPage";
 import { CartProvider } from "./site/context/CartContext";
 import { SiteLayout } from "./site/components/SiteLayout";
 import { HomePage } from "./site/pages/HomePage";
@@ -62,6 +64,8 @@ export default function App() {
                 <Route path="produtos/:id" element={<ProdutoDetailPage />} />
                 <Route path="despesas" element={<DespesasPage />} />
                 <Route path="vendas" element={<VendasPage />} />
+                <Route path="pedidos" element={<PedidosPage />} />
+                <Route path="pedidos/:id" element={<PedidoDetailPage />} />
               </Route>
             </Route>
           </Routes>
