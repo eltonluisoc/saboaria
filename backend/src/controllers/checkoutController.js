@@ -1,7 +1,7 @@
 const prisma = require("../config/prisma");
 const { preference: preferenceClient } = require("../config/mercadopago");
 const { criarPedidoComItens, confirmarPagamento } = require("../services/pedidoService");
-const { frontendUrl, backendUrl } = require("../config/env");
+const { frontendUrl, backendUrl, nodeEnv } = require("../config/env");
 
 function validarCheckoutBody(body) {
   const { itens, cliente } = body || {};
@@ -127,9 +127,14 @@ async function criar(req, res) {
     data: { mpPreferenceId: preferencia.id },
   });
 
+  // O Mercado Pago sempre retorna os dois links, independente da credencial
+  // usada - quem decide qual usar e o ambiente: em producao tem que ir pro
+  // checkout real, sandbox e so pra teste local com credenciais de teste.
+  const checkoutUrl = nodeEnv === "production" ? preferencia.init_point : preferencia.sandbox_init_point || preferencia.init_point;
+
   return res.status(201).json({
     pedidoId: pedido.id,
-    checkoutUrl: preferencia.sandbox_init_point || preferencia.init_point,
+    checkoutUrl,
   });
 }
 

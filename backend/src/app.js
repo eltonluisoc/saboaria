@@ -1,8 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const { nodeEnv, frontendUrl, mercadoPagoAccessToken, mercadoPagoWebhookSecret } = require("./config/env");
-const authMiddleware = require("./middleware/authMiddleware");
+const { nodeEnv, frontendUrl } = require("./config/env");
 const authRoutes = require("./routes/authRoutes");
 const insumoRoutes = require("./routes/insumoRoutes");
 const produtoRoutes = require("./routes/produtoRoutes");
@@ -46,14 +45,6 @@ app.use("/api/admin/relatorio", relatorioRoutes);
 app.use("/api/produtos", catalogoRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/webhooks", webhookRoutes);
-
-// TEMPORARIO - diagnostico de qual credencial MP o processo esta usando (remover depois)
-app.get("/api/admin/_debug/mp-config", authMiddleware, (req, res) => {
-  res.json({
-    accessTokenTail: mercadoPagoAccessToken ? mercadoPagoAccessToken.slice(-8) : null,
-    webhookSecretTail: mercadoPagoWebhookSecret ? mercadoPagoWebhookSecret.slice(-8) : null,
-  });
-});
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
