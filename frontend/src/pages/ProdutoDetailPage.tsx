@@ -92,8 +92,9 @@ export function ProdutoDetailPage() {
         </Link>
         <h1 className="mt-1 text-2xl font-semibold text-slate-800">{produto.nome}</h1>
         <p className="text-sm text-slate-500">
-          Preço de venda: R$ {Number(produto.precoVenda).toFixed(2)} · Custo médio: R${" "}
-          {Number(produto.custoMedio).toFixed(2)} · Margem:{" "}
+          Preço de venda: R$ {Number(produto.precoVenda).toFixed(2)} · Custo médio (insumos): R${" "}
+          {Number(produto.custoMedio).toFixed(2)} · Custo completo (c/ rateio): R${" "}
+          {produto.custoUnitarioCompleto.toFixed(2)} · Estoque: {produto.estoqueAtual} · Margem:{" "}
           <span className={margem >= 0 ? "text-emerald-700" : "text-red-700"}>R$ {margem.toFixed(2)}</span>
         </p>
       </div>

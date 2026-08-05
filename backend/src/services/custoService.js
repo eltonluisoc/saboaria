@@ -41,8 +41,24 @@ async function recalcularProdutosPorInsumo(tx, insumoId) {
   }
 }
 
+// Rateio global e acumulado: soma de TODAS as despesas gerais ja registradas
+// dividida pela soma de TODAS as unidades ja produzidas em lotes, de
+// qualquer produto. Nao e por produto nem por periodo - muda pra todo
+// mundo a cada nova despesa ou lote registrado, em qualquer lugar do sistema.
+async function calcularCustoIndiretoPorUnidade(client) {
+  const [{ custo_indireto: custoIndireto }] = await client.$queryRaw`
+    SELECT COALESCE(
+      (SELECT SUM(valor) FROM despesas_gerais) / NULLIF((SELECT SUM(quantidade_produzida) FROM lotes_producao), 0),
+      0
+    )::numeric(12,4) AS custo_indireto
+  `;
+
+  return custoIndireto;
+}
+
 module.exports = {
   recalcularCustoInsumo,
   recalcularCustoProduto,
   recalcularProdutosPorInsumo,
+  calcularCustoIndiretoPorUnidade,
 };

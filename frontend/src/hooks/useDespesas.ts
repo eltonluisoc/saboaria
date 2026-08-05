@@ -21,6 +21,7 @@ export interface DespesaInput {
   categoria?: string | null;
   dataDespesa: string;
   recorrente?: boolean;
+  dataFimRecorrencia?: string | null;
 }
 
 export function useCriarDespesa() {

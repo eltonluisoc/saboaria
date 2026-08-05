@@ -7,7 +7,7 @@ function parseId(param) {
 }
 
 function validarDespesaBody(body, { partial = false } = {}) {
-  const { descricao, valor, categoria, dataDespesa, recorrente } = body || {};
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia } = body || {};
 
   if (!partial || descricao !== undefined) {
     if (typeof descricao !== "string" || !descricao.trim()) {
@@ -36,6 +36,18 @@ function validarDespesaBody(body, { partial = false } = {}) {
     return "Campo 'recorrente' deve ser booleano";
   }
 
+  if (dataFimRecorrencia !== undefined && dataFimRecorrencia !== null) {
+    if (Number.isNaN(Date.parse(dataFimRecorrencia))) {
+      return "Campo 'dataFimRecorrencia' invalido";
+    }
+    const efetivamenteRecorrente = partial
+      ? recorrente === undefined || recorrente === true
+      : recorrente === true;
+    if (!efetivamenteRecorrente) {
+      return "Campo 'dataFimRecorrencia' so se aplica a uma despesa recorrente";
+    }
+  }
+
   return null;
 }
 
@@ -45,7 +57,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { descricao, valor, categoria, dataDespesa, recorrente } = req.body;
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia } = req.body;
 
   const despesa = await prisma.despesaGeral.create({
     data: {
@@ -54,6 +66,7 @@ async function criar(req, res) {
       categoria: categoria ? categoria.trim() : null,
       dataDespesa: new Date(dataDespesa),
       recorrente: recorrente === undefined ? false : recorrente,
+      dataFimRecorrencia: dataFimRecorrencia ? new Date(dataFimRecorrencia) : null,
     },
   });
 
@@ -104,13 +117,16 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { descricao, valor, categoria, dataDespesa, recorrente } = req.body;
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia } = req.body;
   const data = {};
   if (descricao !== undefined) data.descricao = descricao.trim();
   if (valor !== undefined) data.valor = valor;
   if (categoria !== undefined) data.categoria = categoria ? categoria.trim() : null;
   if (dataDespesa !== undefined) data.dataDespesa = new Date(dataDespesa);
   if (recorrente !== undefined) data.recorrente = recorrente;
+  if (dataFimRecorrencia !== undefined) {
+    data.dataFimRecorrencia = dataFimRecorrencia ? new Date(dataFimRecorrencia) : null;
+  }
 
   try {
     const despesa = await prisma.despesaGeral.update({ where: { id }, data });

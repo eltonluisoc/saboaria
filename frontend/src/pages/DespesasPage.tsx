@@ -111,6 +111,9 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
     despesa?.dataDespesa.slice(0, 10) ?? new Date().toISOString().slice(0, 10)
   );
   const [recorrente, setRecorrente] = useState(despesa?.recorrente ?? false);
+  const [dataFimRecorrencia, setDataFimRecorrencia] = useState(
+    despesa?.dataFimRecorrencia?.slice(0, 10) ?? ""
+  );
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarDespesa();
   const editar = useEditarDespesa(despesa?.id ?? 0);
@@ -126,6 +129,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
         categoria: categoria || null,
         dataDespesa,
         recorrente,
+        dataFimRecorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
       };
       if (despesa) {
         await editar.mutateAsync(dados);
@@ -164,6 +168,14 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
           <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />
           Despesa recorrente (ex: aluguel mensal)
         </label>
+        {recorrente && (
+          <Input
+            label="Data de fim da recorrência (opcional, vazio = indefinida)"
+            type="date"
+            value={dataFimRecorrencia}
+            onChange={(e) => setDataFimRecorrencia(e.target.value)}
+          />
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar

@@ -53,7 +53,12 @@ export function ProdutosPage() {
               ),
             },
             { header: "Preço de venda", render: (row) => `R$ ${Number(row.precoVenda).toFixed(2)}` },
-            { header: "Custo médio", render: (row) => `R$ ${Number(row.custoMedio).toFixed(2)}` },
+            { header: "Custo médio (insumos)", render: (row) => `R$ ${Number(row.custoMedio).toFixed(2)}` },
+            {
+              header: "Custo completo (c/ rateio)",
+              render: (row) => `R$ ${row.custoUnitarioCompleto.toFixed(2)}`,
+            },
+            { header: "Estoque", render: (row) => row.estoqueAtual },
             {
               header: "Margem",
               render: (row) => {
@@ -150,6 +155,11 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
           value={imagemUrl ?? ""}
           onChange={(e) => setImagemUrl(e.target.value)}
         />
+        <p className="-mt-2 text-xs text-slate-500">
+          Pode usar um link direto de imagem hospedada em qualquer lugar — inclusive um link
+          "raw" do GitHub (ex: raw.githubusercontent.com/usuario/repo/main/arquivo.jpg) como
+          opção gratuita de hospedagem.
+        </p>
         <Input
           label="Preço de venda (R$)"
           type="number"

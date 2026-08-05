@@ -1,5 +1,23 @@
 const prisma = require("../config/prisma");
-const { recalcularCustoProduto } = require("../services/custoService");
+const { recalcularCustoProduto, calcularCustoIndiretoPorUnidade } = require("../services/custoService");
+
+async function comCustoCompleto(produto) {
+  const custoIndiretoPorUnidade = Number(await calcularCustoIndiretoPorUnidade(prisma));
+
+  if (Array.isArray(produto)) {
+    return produto.map((p) => ({
+      ...p,
+      custoIndiretoPorUnidade,
+      custoUnitarioCompleto: Number(p.custoMedio) + custoIndiretoPorUnidade,
+    }));
+  }
+
+  return {
+    ...produto,
+    custoIndiretoPorUnidade,
+    custoUnitarioCompleto: Number(produto.custoMedio) + custoIndiretoPorUnidade,
+  };
+}
 
 function parseId(param) {
   const id = Number(param);
@@ -60,7 +78,7 @@ async function criar(req, res) {
 
 async function listar(req, res) {
   const produtos = await prisma.produto.findMany({ orderBy: { nome: "asc" } });
-  return res.json(produtos);
+  return res.json(await comCustoCompleto(produtos));
 }
 
 async function detalhe(req, res) {
@@ -78,7 +96,7 @@ async function detalhe(req, res) {
     return res.status(404).json({ error: "Produto nao encontrado" });
   }
 
-  return res.json(produto);
+  return res.json(await comCustoCompleto(produto));
 }
 
 async function editar(req, res) {

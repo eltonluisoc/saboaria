@@ -28,6 +28,8 @@ export function useComprasInsumo(insumoId: number | undefined) {
 export interface InsumoInput {
   nome: string;
   unidadeMedida: string;
+  quantidadeInicial?: number;
+  precoUnitarioInicial?: number;
 }
 
 export function useCriarInsumo() {

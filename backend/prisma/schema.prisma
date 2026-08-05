@@ -22,6 +22,7 @@ model Insumo {
   nome               String
   unidadeMedida      String   @map("unidade_medida")
   custoUnitarioAtual Decimal  @default(0) @map("custo_unitario_atual") @db.Decimal(12, 4)
+  estoqueAtual       Decimal  @default(0) @map("estoque_atual") @db.Decimal(12, 4)
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -45,18 +46,20 @@ model CompraInsumo {
 }
 
 model Produto {
-  id         Int      @id @default(autoincrement())
-  nome       String
-  descricao  String?
-  imagemUrl  String?  @map("imagem_url")
-  precoVenda Decimal  @map("preco_venda") @db.Decimal(12, 2)
-  custoMedio Decimal  @default(0) @map("custo_medio") @db.Decimal(12, 4)
-  ativo      Boolean  @default(true)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  nome         String
+  descricao    String?
+  imagemUrl    String?  @map("imagem_url")
+  precoVenda   Decimal  @map("preco_venda") @db.Decimal(12, 2)
+  custoMedio   Decimal  @default(0) @map("custo_medio") @db.Decimal(12, 4)
+  estoqueAtual Int      @default(0) @map("estoque_atual")
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  receita     ProdutoInsumo[]
-  itensPedido ItemPedido[]
+  receita       ProdutoInsumo[]
+  itensPedido   ItemPedido[]
+  lotesProducao LoteProducao[]
 
   @@map("produtos")
 }
@@ -74,14 +77,27 @@ model ProdutoInsumo {
   @@map("produto_insumo")
 }
 
+model LoteProducao {
+  id                  Int      @id @default(autoincrement())
+  produtoId           Int      @map("produto_id")
+  quantidadeProduzida Int      @map("quantidade_produzida")
+  dataProducao        DateTime @map("data_producao")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+
+  @@map("lotes_producao")
+}
+
 model DespesaGeral {
-  id          Int      @id @default(autoincrement())
-  descricao   String
-  valor       Decimal  @db.Decimal(12, 2)
-  categoria   String?
-  recorrente  Boolean  @default(false)
-  dataDespesa DateTime @map("data_despesa")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id                 Int       @id @default(autoincrement())
+  descricao          String
+  valor              Decimal   @db.Decimal(12, 2)
+  categoria          String?
+  recorrente         Boolean   @default(false)
+  dataFimRecorrencia DateTime? @map("data_fim_recorrencia")
+  dataDespesa        DateTime  @map("data_despesa")
+  createdAt          DateTime  @default(now()) @map("created_at")
 
   @@map("despesas_gerais")
 }

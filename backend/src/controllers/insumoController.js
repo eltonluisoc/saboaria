@@ -10,13 +10,32 @@ function parseId(param) {
 }
 
 function validarInsumoBody(body) {
-  const { nome, unidadeMedida } = body || {};
+  const { nome, unidadeMedida, quantidadeInicial, precoUnitarioInicial } = body || {};
   if (typeof nome !== "string" || !nome.trim()) {
     return "Campo 'nome' e obrigatorio";
   }
   if (typeof unidadeMedida !== "string" || !unidadeMedida.trim()) {
     return "Campo 'unidadeMedida' e obrigatorio";
   }
+
+  const temQuantidade = quantidadeInicial !== undefined && quantidadeInicial !== null;
+  const temPreco = precoUnitarioInicial !== undefined && precoUnitarioInicial !== null;
+
+  if (temQuantidade !== temPreco) {
+    return "'quantidadeInicial' e 'precoUnitarioInicial' devem ser preenchidos juntos";
+  }
+
+  if (temQuantidade) {
+    const qtd = Number(quantidadeInicial);
+    const preco = Number(precoUnitarioInicial);
+    if (!Number.isFinite(qtd) || qtd <= 0) {
+      return "Campo 'quantidadeInicial' deve ser um numero maior que zero";
+    }
+    if (!Number.isFinite(preco) || preco < 0) {
+      return "Campo 'precoUnitarioInicial' deve ser um numero maior ou igual a zero";
+    }
+  }
+
   return null;
 }
 
@@ -26,9 +45,38 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, unidadeMedida } = req.body;
-  const insumo = await prisma.insumo.create({
-    data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() },
+  const { nome, unidadeMedida, quantidadeInicial, precoUnitarioInicial } = req.body;
+  const temCompraInicial = quantidadeInicial !== undefined && quantidadeInicial !== null;
+
+  if (!temCompraInicial) {
+    const insumo = await prisma.insumo.create({
+      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() },
+    });
+    return res.status(201).json(insumo);
+  }
+
+  const insumo = await prisma.$transaction(async (tx) => {
+    const novoInsumo = await tx.insumo.create({
+      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() },
+    });
+
+    await tx.compraInsumo.create({
+      data: {
+        insumoId: novoInsumo.id,
+        quantidade: quantidadeInicial,
+        precoUnitario: precoUnitarioInicial,
+        dataCompra: new Date(),
+      },
+    });
+
+    await tx.insumo.update({
+      where: { id: novoInsumo.id },
+      data: { estoqueAtual: { increment: quantidadeInicial } },
+    });
+
+    await recalcularCustoInsumo(tx, novoInsumo.id);
+
+    return tx.insumo.findUnique({ where: { id: novoInsumo.id } });
   });
 
   return res.status(201).json(insumo);
@@ -151,6 +199,11 @@ async function registrarCompra(req, res) {
         precoUnitario,
         dataCompra: new Date(dataCompra),
       },
+    });
+
+    await tx.insumo.update({
+      where: { id: insumoId },
+      data: { estoqueAtual: { increment: quantidade } },
     });
 
     const custoUnitarioAtual = await recalcularCustoInsumo(tx, insumoId);

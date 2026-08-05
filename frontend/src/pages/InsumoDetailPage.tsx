@@ -48,6 +48,10 @@ export function InsumoDetailPage() {
         <p className="text-sm text-slate-500">
           Unidade: {insumo.unidadeMedida} · Custo unitário atual:{" "}
           <span className="font-medium text-slate-700">R$ {Number(insumo.custoUnitarioAtual).toFixed(4)}</span>
+          {" "}· Estoque atual:{" "}
+          <span className="font-medium text-slate-700">
+            {Number(insumo.estoqueAtual)} {insumo.unidadeMedida}
+          </span>
         </p>
       </div>
 

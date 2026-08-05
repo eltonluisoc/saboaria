@@ -9,6 +9,7 @@ const links = [
   { to: "/admin/despesas", label: "Despesas" },
   { to: "/admin/vendas", label: "Vendas" },
   { to: "/admin/pedidos", label: "Pedidos" },
+  { to: "/admin/lotes", label: "Lotes de Produção" },
 ];
 
 export function ProtectedLayout() {

@@ -58,6 +58,10 @@ export function InsumosPage() {
               render: (row) => `R$ ${Number(row.custoUnitarioAtual).toFixed(4)}`,
             },
             {
+              header: "Estoque atual",
+              render: (row) => `${Number(row.estoqueAtual)} ${row.unidadeMedida}`,
+            },
+            {
               header: "Ações",
               render: (row) => (
                 <div className="flex gap-3">
@@ -84,6 +88,8 @@ export function InsumosPage() {
 function InsumoFormModal({ insumo, onClose }: { insumo: Insumo | null; onClose: () => void }) {
   const [nome, setNome] = useState(insumo?.nome ?? "");
   const [unidadeMedida, setUnidadeMedida] = useState(insumo?.unidadeMedida ?? "");
+  const [quantidadeInicial, setQuantidadeInicial] = useState("");
+  const [precoUnitarioInicial, setPrecoUnitarioInicial] = useState("");
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarInsumo();
   const editar = useEditarInsumo(insumo?.id ?? 0);
@@ -96,7 +102,12 @@ function InsumoFormModal({ insumo, onClose }: { insumo: Insumo | null; onClose: 
       if (insumo) {
         await editar.mutateAsync({ nome, unidadeMedida });
       } else {
-        await criar.mutateAsync({ nome, unidadeMedida });
+        await criar.mutateAsync({
+          nome,
+          unidadeMedida,
+          quantidadeInicial: quantidadeInicial ? Number(quantidadeInicial) : undefined,
+          precoUnitarioInicial: precoUnitarioInicial ? Number(precoUnitarioInicial) : undefined,
+        });
       }
       onClose();
     } catch (err) {
@@ -115,6 +126,29 @@ function InsumoFormModal({ insumo, onClose }: { insumo: Insumo | null; onClose: 
           onChange={(e) => setUnidadeMedida(e.target.value)}
           required
         />
+        {!insumo && (
+          <>
+            <p className="text-xs text-slate-500">
+              Opcional: já registra a primeira compra deste insumo, sem precisar editar depois.
+            </p>
+            <Input
+              label="Quantidade inicial comprada (opcional)"
+              type="number"
+              step="any"
+              min="0"
+              value={quantidadeInicial}
+              onChange={(e) => setQuantidadeInicial(e.target.value)}
+            />
+            <Input
+              label="Preço unitário (R$, opcional)"
+              type="number"
+              step="any"
+              min="0"
+              value={precoUnitarioInicial}
+              onChange={(e) => setPrecoUnitarioInicial(e.target.value)}
+            />
+          </>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar

@@ -8,6 +8,7 @@ export interface Insumo {
   nome: string;
   unidadeMedida: string;
   custoUnitarioAtual: string;
+  estoqueAtual: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +29,9 @@ export interface Produto {
   imagemUrl: string | null;
   precoVenda: string;
   custoMedio: string;
+  custoIndiretoPorUnidade: number;
+  custoUnitarioCompleto: number;
+  estoqueAtual: number;
   ativo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -51,6 +55,7 @@ export interface DespesaGeral {
   valor: string;
   categoria: string | null;
   recorrente: boolean;
+  dataFimRecorrencia: string | null;
   dataDespesa: string;
   createdAt: string;
 }
@@ -85,6 +90,15 @@ export interface Venda {
   updatedAt: string;
   itens: ItemPedido[];
   cliente?: Cliente | null;
+}
+
+export interface LoteProducao {
+  id: number;
+  produtoId: number;
+  quantidadeProduzida: number;
+  dataProducao: string;
+  createdAt: string;
+  produto?: Produto;
 }
 
 export interface Relatorio {

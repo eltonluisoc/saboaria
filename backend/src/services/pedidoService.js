@@ -32,6 +32,15 @@ async function criarPedidoComItens(tx, { clienteId, origem, status, formaPagamen
     data: itensData.map((item) => ({ ...item, pedidoId: novoPedido.id })),
   });
 
+  if (status === "pago") {
+    for (const item of itensData) {
+      await tx.produto.update({
+        where: { id: item.produtoId },
+        data: { estoqueAtual: { decrement: item.quantidade } },
+      });
+    }
+  }
+
   return tx.pedido.findUnique({
     where: { id: novoPedido.id },
     include: { itens: { include: { produto: true } }, cliente: true },
@@ -58,7 +67,10 @@ async function confirmarPagamento(paymentId) {
     return null;
   }
 
-  const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
+  const pedido = await prisma.pedido.findUnique({
+    where: { id: pedidoId },
+    include: { itens: true },
+  });
   if (!pedido) {
     console.warn(`Pagamento ${paymentId} referencia pedido ${pedidoId} inexistente`);
     return null;
@@ -74,14 +86,26 @@ async function confirmarPagamento(paymentId) {
   }
 
   const novoStatus = STATUS_MAP[pagamento.status] || pedido.status;
+  const precisaDecrementarEstoque = pedido.status !== "pago" && novoStatus === "pago";
 
-  return prisma.pedido.update({
-    where: { id: pedidoId },
-    data: {
-      status: novoStatus,
-      mpPaymentId: String(pagamento.id),
-      formaPagamento: pagamento.payment_method_id || pedido.formaPagamento,
-    },
+  return prisma.$transaction(async (tx) => {
+    if (precisaDecrementarEstoque) {
+      for (const item of pedido.itens) {
+        await tx.produto.update({
+          where: { id: item.produtoId },
+          data: { estoqueAtual: { decrement: item.quantidade } },
+        });
+      }
+    }
+
+    return tx.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        status: novoStatus,
+        mpPaymentId: String(pagamento.id),
+        formaPagamento: pagamento.payment_method_id || pedido.formaPagamento,
+      },
+    });
   });
 }
 
