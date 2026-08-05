@@ -86,6 +86,9 @@ export function ProdutosPage() {
               header: "Ações",
               render: (row) => (
                 <div className="flex gap-3">
+                  <Link to={`/admin/produtos/${row.id}`} className="text-sm text-emerald-700 hover:underline">
+                    Receita
+                  </Link>
                   <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalProduto(row)}>
                     Editar
                   </button>

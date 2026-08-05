@@ -65,6 +65,9 @@ export function InsumosPage() {
               header: "Ações",
               render: (row) => (
                 <div className="flex gap-3">
+                  <Link to={`/admin/insumos/${row.id}`} className="text-sm text-emerald-700 hover:underline">
+                    Comprar
+                  </Link>
                   <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalInsumo(row)}>
                     Editar
                   </button>
