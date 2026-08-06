@@ -13,6 +13,9 @@ async function recalcularCustoInsumo(tx, insumoId) {
   return media;
 }
 
+// "quantidade_usada" na receita e por 1kg (1000g) de massa produzida, nao
+// por unidade - assim trocar de molde e so questao de mudar o peso da
+// unidade, sem recadastrar a receita inteira.
 async function recalcularCustoProduto(tx, produtoId) {
   const [{ custo }] = await tx.$queryRaw`
     SELECT COALESCE(SUM(pi.quantidade_usada * i.custo_unitario_atual), 0)::numeric(12,4) AS custo
@@ -21,12 +24,20 @@ async function recalcularCustoProduto(tx, produtoId) {
     WHERE pi.produto_id = ${produtoId}
   `;
 
+  const produto = await tx.produto.findUnique({
+    where: { id: produtoId },
+    select: { pesoUnidadeGramas: true },
+  });
+  const pesoGramas = produto?.pesoUnidadeGramas ? Number(produto.pesoUnidadeGramas) : 0;
+  const custoPorKg = Number(custo);
+  const custoMedio = (custoPorKg * pesoGramas) / 1000;
+
   await tx.produto.update({
     where: { id: produtoId },
-    data: { custoMedio: custo },
+    data: { custoMedio },
   });
 
-  return custo;
+  return { custoPorKg, custoMedio };
 }
 
 async function recalcularProdutosPorInsumo(tx, insumoId) {

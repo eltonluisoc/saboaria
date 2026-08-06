@@ -22,6 +22,7 @@ export interface ProdutoInput {
   descricao?: string | null;
   imagemUrl?: string | null;
   precoVenda: number;
+  pesoUnidadeGramas?: number | null;
   ativo?: boolean;
 }
 

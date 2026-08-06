@@ -29,6 +29,8 @@ export interface Produto {
   imagemUrl: string | null;
   precoVenda: string;
   custoMedio: string;
+  pesoUnidadeGramas: string | null;
+  custoPorKgMassa: number;
   custoIndiretoPorUnidade: number;
   custoUnitarioCompleto: number;
   estoqueAtual: number;

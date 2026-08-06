@@ -1,6 +1,12 @@
 const prisma = require("../config/prisma");
 const { recalcularCustoProduto, calcularCustoIndiretoPorUnidade } = require("../services/custoService");
 
+function calcularCustoPorKgMassa(produto) {
+  const peso = Number(produto.pesoUnidadeGramas);
+  if (!peso) return 0;
+  return (Number(produto.custoMedio) * 1000) / peso;
+}
+
 async function comCustoCompleto(produto) {
   const custoIndiretoPorUnidade = Number(await calcularCustoIndiretoPorUnidade(prisma));
 
@@ -9,6 +15,7 @@ async function comCustoCompleto(produto) {
       ...p,
       custoIndiretoPorUnidade,
       custoUnitarioCompleto: Number(p.custoMedio) + custoIndiretoPorUnidade,
+      custoPorKgMassa: calcularCustoPorKgMassa(p),
     }));
   }
 
@@ -16,6 +23,7 @@ async function comCustoCompleto(produto) {
     ...produto,
     custoIndiretoPorUnidade,
     custoUnitarioCompleto: Number(produto.custoMedio) + custoIndiretoPorUnidade,
+    custoPorKgMassa: calcularCustoPorKgMassa(produto),
   };
 }
 
@@ -25,7 +33,7 @@ function parseId(param) {
 }
 
 function validarProdutoBody(body, { partial = false } = {}) {
-  const { nome, precoVenda, descricao, ativo, imagemUrl } = body || {};
+  const { nome, precoVenda, descricao, ativo, imagemUrl, pesoUnidadeGramas } = body || {};
 
   if (!partial || nome !== undefined) {
     if (typeof nome !== "string" || !nome.trim()) {
@@ -52,6 +60,13 @@ function validarProdutoBody(body, { partial = false } = {}) {
     return "Campo 'imagemUrl' deve ser texto";
   }
 
+  if (pesoUnidadeGramas !== undefined && pesoUnidadeGramas !== null) {
+    const peso = Number(pesoUnidadeGramas);
+    if (!Number.isFinite(peso) || peso <= 0) {
+      return "Campo 'pesoUnidadeGramas' deve ser um numero maior que zero";
+    }
+  }
+
   return null;
 }
 
@@ -61,7 +76,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, descricao, precoVenda, ativo, imagemUrl } = req.body;
+  const { nome, descricao, precoVenda, ativo, imagemUrl, pesoUnidadeGramas } = req.body;
 
   const produto = await prisma.produto.create({
     data: {
@@ -69,6 +84,7 @@ async function criar(req, res) {
       descricao: descricao ? descricao.trim() : null,
       imagemUrl: imagemUrl ? imagemUrl.trim() : null,
       precoVenda,
+      pesoUnidadeGramas: pesoUnidadeGramas || null,
       ativo: ativo === undefined ? true : ativo,
     },
   });
@@ -110,16 +126,24 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, descricao, precoVenda, ativo, imagemUrl } = req.body;
+  const { nome, descricao, precoVenda, ativo, imagemUrl, pesoUnidadeGramas } = req.body;
   const data = {};
   if (nome !== undefined) data.nome = nome.trim();
   if (descricao !== undefined) data.descricao = descricao ? descricao.trim() : null;
   if (precoVenda !== undefined) data.precoVenda = precoVenda;
   if (ativo !== undefined) data.ativo = ativo;
   if (imagemUrl !== undefined) data.imagemUrl = imagemUrl ? imagemUrl.trim() : null;
+  if (pesoUnidadeGramas !== undefined) data.pesoUnidadeGramas = pesoUnidadeGramas || null;
 
   try {
-    const produto = await prisma.produto.update({ where: { id }, data });
+    const produto = await prisma.$transaction(async (tx) => {
+      await tx.produto.update({ where: { id }, data });
+      // custoMedio (por unidade) depende do peso, entao recalcula se ele mudou
+      if (pesoUnidadeGramas !== undefined) {
+        await recalcularCustoProduto(tx, id);
+      }
+      return tx.produto.findUnique({ where: { id } });
+    });
     return res.json(produto);
   } catch (err) {
     if (err.code === "P2025") {
@@ -196,6 +220,13 @@ async function substituirReceita(req, res) {
   }
 
   const itens = req.body;
+
+  if (itens.length > 0 && !produtoExiste.pesoUnidadeGramas) {
+    return res.status(400).json({
+      error: "Defina o peso por unidade (g) do produto antes de cadastrar a receita",
+    });
+  }
+
   const insumoIds = itens.map((item) => Number(item.insumoId));
 
   if (insumoIds.length > 0) {

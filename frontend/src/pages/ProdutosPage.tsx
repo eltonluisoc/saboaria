@@ -114,6 +114,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
   const [descricao, setDescricao] = useState(produto?.descricao ?? "");
   const [imagemUrl, setImagemUrl] = useState(produto?.imagemUrl ?? "");
   const [precoVenda, setPrecoVenda] = useState(produto?.precoVenda ?? "");
+  const [pesoUnidadeGramas, setPesoUnidadeGramas] = useState(produto?.pesoUnidadeGramas ?? "");
   const [ativo, setAtivo] = useState(produto?.ativo ?? true);
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarProduto();
@@ -129,6 +130,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         descricao: descricao || null,
         imagemUrl: imagemUrl || null,
         precoVenda: Number(precoVenda),
+        pesoUnidadeGramas: pesoUnidadeGramas ? Number(pesoUnidadeGramas) : null,
         ativo,
       };
       if (produto) {
@@ -172,6 +174,19 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
           onChange={(e) => setPrecoVenda(e.target.value)}
           required
         />
+        <Input
+          label="Peso por unidade (g)"
+          type="number"
+          step="any"
+          min="0"
+          value={pesoUnidadeGramas}
+          onChange={(e) => setPesoUnidadeGramas(e.target.value)}
+        />
+        <p className="-mt-2 text-xs text-slate-500">
+          Necessário antes de cadastrar a receita — a receita é definida por kg de massa, e o
+          peso da unidade converte isso pro custo por sabonete. Trocar de molde é só atualizar
+          esse peso, sem mexer na receita.
+        </p>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
           Ativo (visível no site quando o catálogo existir)

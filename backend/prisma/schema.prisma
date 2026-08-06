@@ -46,16 +46,17 @@ model CompraInsumo {
 }
 
 model Produto {
-  id           Int      @id @default(autoincrement())
-  nome         String
-  descricao    String?
-  imagemUrl    String?  @map("imagem_url")
-  precoVenda   Decimal  @map("preco_venda") @db.Decimal(12, 2)
-  custoMedio   Decimal  @default(0) @map("custo_medio") @db.Decimal(12, 4)
-  estoqueAtual Int      @default(0) @map("estoque_atual")
-  ativo        Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                Int      @id @default(autoincrement())
+  nome              String
+  descricao         String?
+  imagemUrl         String?  @map("imagem_url")
+  precoVenda        Decimal  @map("preco_venda") @db.Decimal(12, 2)
+  custoMedio        Decimal  @default(0) @map("custo_medio") @db.Decimal(12, 4)
+  pesoUnidadeGramas Decimal? @map("peso_unidade_gramas") @db.Decimal(10, 2)
+  estoqueAtual      Int      @default(0) @map("estoque_atual")
+  ativo             Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   receita       ProdutoInsumo[]
   itensPedido   ItemPedido[]

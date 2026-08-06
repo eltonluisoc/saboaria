@@ -76,11 +76,16 @@ export function ProdutoDetailPage() {
   if (isLoading) return <Spinner />;
   if (!produto) return <ErrorBanner message="Produto nao encontrado" />;
 
-  const custoCalculado = linhas.reduce((soma, l) => {
+  const custoPorKgCalculado = linhas.reduce((soma, l) => {
     const insumo = insumosPorId.get(l.insumoId);
     if (!insumo) return soma;
     return soma + Number(l.quantidadeUsada || 0) * Number(insumo.custoUnitarioAtual);
   }, 0);
+
+  const pesoDefinido = Number(produto.pesoUnidadeGramas) > 0;
+  const custoPorUnidadeCalculado = pesoDefinido
+    ? (custoPorKgCalculado * Number(produto.pesoUnidadeGramas)) / 1000
+    : 0;
 
   const margem = Number(produto.precoVenda) - Number(produto.custoMedio);
 
@@ -92,15 +97,30 @@ export function ProdutoDetailPage() {
         </Link>
         <h1 className="mt-1 text-2xl font-semibold text-slate-800">{produto.nome}</h1>
         <p className="text-sm text-slate-500">
-          Preço de venda: R$ {Number(produto.precoVenda).toFixed(2)} · Custo médio (insumos): R${" "}
+          Preço de venda: R$ {Number(produto.precoVenda).toFixed(2)} · Custo por kg de massa: R${" "}
+          {produto.custoPorKgMassa.toFixed(2)} · Custo médio (por unidade, insumos): R${" "}
           {Number(produto.custoMedio).toFixed(2)} · Custo completo (c/ rateio): R${" "}
-          {produto.custoUnitarioCompleto.toFixed(2)} · Estoque: {produto.estoqueAtual} · Margem:{" "}
+          {produto.custoUnitarioCompleto.toFixed(2)} · Peso da unidade:{" "}
+          {produto.pesoUnidadeGramas ? `${produto.pesoUnidadeGramas}g` : "não definido"} · Estoque:{" "}
+          {produto.estoqueAtual} · Margem:{" "}
           <span className={margem >= 0 ? "text-emerald-700" : "text-red-700"}>R$ {margem.toFixed(2)}</span>
         </p>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-3 text-lg font-medium text-slate-800">Receita</h2>
+        <p className="mb-3 text-xs text-slate-500">
+          As quantidades abaixo são por 1kg (1000g) de massa produzida, não por unidade — assim,
+          trocar de molde é só atualizar o "Peso por unidade" no cadastro do produto, sem
+          recadastrar a receita.
+        </p>
+
+        {!pesoDefinido && (
+          <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+            Defina o "Peso por unidade (g)" no cadastro do produto (botão Editar) antes de
+            salvar a receita.
+          </div>
+        )}
 
         {error && (
           <div className="mb-3">
@@ -118,9 +138,9 @@ export function ProdutoDetailPage() {
             <thead className="bg-slate-50 text-slate-600">
               <tr>
                 <th className="px-4 py-2 font-medium">Insumo</th>
-                <th className="px-4 py-2 font-medium">Quantidade</th>
-                <th className="px-4 py-2 font-medium">Custo unitário</th>
-                <th className="px-4 py-2 font-medium">Subtotal</th>
+                <th className="px-4 py-2 font-medium">Quantidade (por kg de massa)</th>
+                <th className="px-4 py-2 font-medium">Custo unitário do insumo</th>
+                <th className="px-4 py-2 font-medium">Subtotal (por kg)</th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
             </thead>
@@ -177,7 +197,7 @@ export function ProdutoDetailPage() {
               ))}
           </Select>
           <Input
-            label="Quantidade"
+            label="Quantidade por kg de massa"
             type="number"
             step="any"
             min="0"
@@ -191,10 +211,14 @@ export function ProdutoDetailPage() {
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
           <p className="text-sm text-slate-600">
-            Custo médio calculado com estas linhas:{" "}
-            <span className="font-medium">R$ {custoCalculado.toFixed(4)}</span>
+            Custo por kg de massa: <span className="font-medium">R$ {custoPorKgCalculado.toFixed(4)}</span>
+            {" · "}Custo por unidade{pesoDefinido ? "" : " (defina o peso pra calcular)"}:{" "}
+            <span className="font-medium">R$ {custoPorUnidadeCalculado.toFixed(4)}</span>
           </p>
-          <Button onClick={salvar} disabled={salvarReceita.isPending}>
+          <Button
+            onClick={salvar}
+            disabled={salvarReceita.isPending || (linhas.length > 0 && !pesoDefinido)}
+          >
             {salvarReceita.isPending ? "Salvando..." : "Salvar receita"}
           </Button>
         </div>
