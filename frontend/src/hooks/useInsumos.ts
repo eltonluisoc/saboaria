@@ -51,8 +51,12 @@ export function useEditarInsumo(id: number) {
 export function useRemoverInsumo() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/api/admin/insumos/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["insumos"] }),
+    mutationFn: ({ id, cascata }: { id: number; cascata?: boolean }) =>
+      api.delete(`/api/admin/insumos/${id}${cascata ? "?cascata=true" : ""}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["insumos"] });
+      qc.invalidateQueries({ queryKey: ["produtos"] });
+    },
   });
 }
 
@@ -66,6 +70,29 @@ export function useRegistrarCompra(insumoId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CompraInput) => api.post(`/api/admin/insumos/${insumoId}/compras`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["insumos"] });
+      qc.invalidateQueries({ queryKey: ["produtos"] });
+    },
+  });
+}
+
+export function useEditarCompra(insumoId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ compraId, data }: { compraId: number; data: CompraInput }) =>
+      api.put(`/api/admin/insumos/${insumoId}/compras/${compraId}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["insumos"] });
+      qc.invalidateQueries({ queryKey: ["produtos"] });
+    },
+  });
+}
+
+export function useRemoverCompra(insumoId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (compraId: number) => api.delete(`/api/admin/insumos/${insumoId}/compras/${compraId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["insumos"] });
       qc.invalidateQueries({ queryKey: ["produtos"] });

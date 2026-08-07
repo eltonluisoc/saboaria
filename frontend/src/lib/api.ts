@@ -2,10 +2,12 @@ const API_URL = (import.meta.env.VITE_API_URL as string) || "";
 
 export class ApiError extends Error {
   status: number;
+  data?: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, data?: unknown) {
     super(message);
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -26,7 +28,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new ApiError(data?.error || "Erro na requisicao", res.status);
+    throw new ApiError(data?.error || "Erro na requisicao", res.status, data);
   }
 
   return data as T;

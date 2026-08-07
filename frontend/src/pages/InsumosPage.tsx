@@ -19,8 +19,26 @@ export function InsumosPage() {
     if (!confirm(`Remover o insumo "${insumo.nome}"?`)) return;
     setActionError(null);
     try {
-      await remover.mutateAsync(insumo.id);
+      await remover.mutateAsync({ id: insumo.id });
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.data && typeof err.data === "object") {
+        const { compras, produtos } = err.data as { compras?: number; produtos?: string[] };
+        if (compras !== undefined && produtos !== undefined) {
+          const listaProdutos = produtos.length > 0 ? produtos.join(", ") : "nenhum produto";
+          const confirmarCascata = confirm(
+            `Esse insumo tem ${compras} compra(s) registrada(s) e é usado na receita de: ${listaProdutos}.\n\n` +
+              "Excluir o insumo E todo esse histórico (compras + linhas de receita nesses produtos)?"
+          );
+          if (confirmarCascata) {
+            try {
+              await remover.mutateAsync({ id: insumo.id, cascata: true });
+            } catch (err2) {
+              setActionError(err2 instanceof ApiError ? err2.message : "Erro ao remover insumo");
+            }
+          }
+          return;
+        }
+      }
       setActionError(err instanceof ApiError ? err.message : "Erro ao remover insumo");
     }
   }

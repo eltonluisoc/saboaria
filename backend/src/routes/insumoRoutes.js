@@ -14,5 +14,7 @@ router.delete("/:id", insumoController.remover);
 
 router.post("/:id/compras", insumoController.registrarCompra);
 router.get("/:id/compras", insumoController.listarCompras);
+router.put("/:id/compras/:compraId", insumoController.editarCompra);
+router.delete("/:id/compras/:compraId", insumoController.removerCompra);
 
 module.exports = router;

@@ -47,10 +47,19 @@ async function criar(req, res) {
     });
   }
 
+  if (!produto.pesoUnidadeGramas) {
+    return res.status(400).json({
+      error: "Produto sem peso por unidade definido, nao e possivel calcular o consumo de insumos",
+    });
+  }
+
+  const massaProduzidaKg = (quantidadeProduzida * Number(produto.pesoUnidadeGramas)) / 1000;
+
   const insumosInsuficientes = produto.receita
     .map((item) => ({
       nome: item.insumo.nome,
-      necessario: Number(item.quantidadeUsada) * quantidadeProduzida,
+      insumoId: item.insumoId,
+      necessario: Number(item.quantidadeUsada) * massaProduzidaKg,
       disponivel: Number(item.insumo.estoqueAtual),
     }))
     .filter((item) => item.necessario > item.disponivel);
@@ -66,7 +75,7 @@ async function criar(req, res) {
 
   const lote = await prisma.$transaction(async (tx) => {
     for (const item of produto.receita) {
-      const necessario = Number(item.quantidadeUsada) * quantidadeProduzida;
+      const necessario = Number(item.quantidadeUsada) * massaProduzidaKg;
       await tx.insumo.update({
         where: { id: item.insumoId },
         data: { estoqueAtual: { decrement: necessario } },

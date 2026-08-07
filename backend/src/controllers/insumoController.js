@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const {
   recalcularCustoInsumo,
+  recalcularCustoProduto,
   recalcularProdutosPorInsumo,
 } = require("../services/custoService");
 
@@ -134,18 +135,46 @@ async function remover(req, res) {
     return res.status(400).json({ error: "Id invalido" });
   }
 
+  const cascata = req.query.cascata === "true";
+
   const [compras, receitas] = await Promise.all([
     prisma.compraInsumo.count({ where: { insumoId: id } }),
     prisma.produtoInsumo.count({ where: { insumoId: id } }),
   ]);
 
-  if (compras > 0 || receitas > 0) {
+  if ((compras > 0 || receitas > 0) && !cascata) {
+    const produtosAfetados = await prisma.produtoInsumo.findMany({
+      where: { insumoId: id },
+      include: { produto: { select: { nome: true } } },
+    });
     return res.status(409).json({
       error: "Insumo em uso (possui compras ou receitas vinculadas) e nao pode ser removido",
+      compras,
+      produtos: produtosAfetados.map((p) => p.produto.nome),
     });
   }
 
   try {
+    if (cascata) {
+      const produtosAfetados = await prisma.produtoInsumo.findMany({
+        where: { insumoId: id },
+        select: { produtoId: true },
+      });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.compraInsumo.deleteMany({ where: { insumoId: id } });
+        await tx.produtoInsumo.deleteMany({ where: { insumoId: id } });
+
+        for (const { produtoId } of produtosAfetados) {
+          await recalcularCustoProduto(tx, produtoId);
+        }
+
+        await tx.insumo.delete({ where: { id } });
+      });
+
+      return res.status(204).send();
+    }
+
     await prisma.insumo.delete({ where: { id } });
     return res.status(204).send();
   } catch (err) {
@@ -215,6 +244,90 @@ async function registrarCompra(req, res) {
   return res.status(201).json(resultado);
 }
 
+function parseCompraId(param) {
+  const id = Number(param);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+async function buscarCompraDoInsumo(insumoId, compraId) {
+  const compra = await prisma.compraInsumo.findUnique({ where: { id: compraId } });
+  if (!compra || compra.insumoId !== insumoId) {
+    return null;
+  }
+  return compra;
+}
+
+async function editarCompra(req, res) {
+  const insumoId = parseId(req.params.id);
+  const compraId = parseCompraId(req.params.compraId);
+  if (!insumoId || !compraId) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  const erro = validarCompraBody(req.body);
+  if (erro) {
+    return res.status(400).json({ error: erro });
+  }
+
+  const compraExistente = await buscarCompraDoInsumo(insumoId, compraId);
+  if (!compraExistente) {
+    return res.status(404).json({ error: "Compra nao encontrada" });
+  }
+
+  const { quantidade, precoUnitario, dataCompra } = req.body;
+  const deltaQuantidade = Number(quantidade) - Number(compraExistente.quantidade);
+
+  const resultado = await prisma.$transaction(async (tx) => {
+    const compra = await tx.compraInsumo.update({
+      where: { id: compraId },
+      data: {
+        quantidade,
+        precoUnitario,
+        dataCompra: new Date(dataCompra),
+      },
+    });
+
+    await tx.insumo.update({
+      where: { id: insumoId },
+      data: { estoqueAtual: { increment: deltaQuantidade } },
+    });
+
+    const custoUnitarioAtual = await recalcularCustoInsumo(tx, insumoId);
+    await recalcularProdutosPorInsumo(tx, insumoId);
+
+    return { compra, custoUnitarioAtual };
+  });
+
+  return res.json(resultado);
+}
+
+async function removerCompra(req, res) {
+  const insumoId = parseId(req.params.id);
+  const compraId = parseCompraId(req.params.compraId);
+  if (!insumoId || !compraId) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  const compraExistente = await buscarCompraDoInsumo(insumoId, compraId);
+  if (!compraExistente) {
+    return res.status(404).json({ error: "Compra nao encontrada" });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.compraInsumo.delete({ where: { id: compraId } });
+
+    await tx.insumo.update({
+      where: { id: insumoId },
+      data: { estoqueAtual: { decrement: compraExistente.quantidade } },
+    });
+
+    await recalcularCustoInsumo(tx, insumoId);
+    await recalcularProdutosPorInsumo(tx, insumoId);
+  });
+
+  return res.status(204).send();
+}
+
 async function listarCompras(req, res) {
   const insumoId = parseId(req.params.id);
   if (!insumoId) {
@@ -242,4 +355,6 @@ module.exports = {
   remover,
   registrarCompra,
   listarCompras,
+  editarCompra,
+  removerCompra,
 };
