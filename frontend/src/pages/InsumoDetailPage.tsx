@@ -24,7 +24,7 @@ export function InsumoDetailPage() {
   const removerCompra = useRemoverCompra(insumoId);
 
   const [quantidade, setQuantidade] = useState("");
-  const [precoUnitario, setPrecoUnitario] = useState("");
+  const [valorTotalPago, setValorTotalPago] = useState("");
   const [dataCompra, setDataCompra] = useState(() => new Date().toISOString().slice(0, 10));
   const [error, setError] = useState<string | null>(null);
   const [modalCompra, setModalCompra] = useState<CompraInsumo | undefined>(undefined);
@@ -36,11 +36,11 @@ export function InsumoDetailPage() {
     try {
       await registrarCompra.mutateAsync({
         quantidade: Number(quantidade),
-        precoUnitario: Number(precoUnitario),
+        precoUnitario: Number(valorTotalPago) / Number(quantidade),
         dataCompra,
       });
       setQuantidade("");
-      setPrecoUnitario("");
+      setValorTotalPago("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Erro ao registrar compra");
     }
@@ -85,7 +85,7 @@ export function InsumoDetailPage() {
             </div>
           )}
           <Input
-            label={`Quantidade (${insumo.unidadeMedida})`}
+            label={`Quantidade comprada (${insumo.unidadeMedida})`}
             type="number"
             step="any"
             min="0"
@@ -94,12 +94,12 @@ export function InsumoDetailPage() {
             required
           />
           <Input
-            label="Preço unitário (R$)"
+            label="Valor total pago (R$)"
             type="number"
             step="any"
             min="0"
-            value={precoUnitario}
-            onChange={(e) => setPrecoUnitario(e.target.value)}
+            value={valorTotalPago}
+            onChange={(e) => setValorTotalPago(e.target.value)}
             required
           />
           <Input
@@ -133,10 +133,13 @@ export function InsumoDetailPage() {
                 render: (row) => new Date(row.dataCompra).toLocaleDateString("pt-BR", { timeZone: "UTC" }),
               },
               { header: "Quantidade", render: (row) => Number(row.quantidade).toString() },
-              { header: "Preço unitário", render: (row) => `R$ ${Number(row.precoUnitario).toFixed(4)}` },
               {
-                header: "Valor total",
+                header: "Valor total pago",
                 render: (row) => `R$ ${(Number(row.quantidade) * Number(row.precoUnitario)).toFixed(2)}`,
+              },
+              {
+                header: "Preço unitário (calculado)",
+                render: (row) => `R$ ${Number(row.precoUnitario).toFixed(4)}`,
               },
               {
                 header: "Ações",
@@ -183,7 +186,9 @@ function CompraFormModal({
   onClose: () => void;
 }) {
   const [quantidade, setQuantidade] = useState(compra.quantidade);
-  const [precoUnitario, setPrecoUnitario] = useState(compra.precoUnitario);
+  const [valorTotalPago, setValorTotalPago] = useState(
+    (Number(compra.quantidade) * Number(compra.precoUnitario)).toString()
+  );
   const [dataCompra, setDataCompra] = useState(compra.dataCompra.slice(0, 10));
   const [error, setError] = useState<string | null>(null);
   const editarCompra = useEditarCompra(insumoId);
@@ -196,7 +201,7 @@ function CompraFormModal({
         compraId: compra.id,
         data: {
           quantidade: Number(quantidade),
-          precoUnitario: Number(precoUnitario),
+          precoUnitario: Number(valorTotalPago) / Number(quantidade),
           dataCompra,
         },
       });
@@ -211,7 +216,7 @@ function CompraFormModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <ErrorBanner message={error} />}
         <Input
-          label={`Quantidade (${unidadeMedida})`}
+          label={`Quantidade comprada (${unidadeMedida})`}
           type="number"
           step="any"
           min="0"
@@ -220,12 +225,12 @@ function CompraFormModal({
           required
         />
         <Input
-          label="Preço unitário (R$)"
+          label="Valor total pago (R$)"
           type="number"
           step="any"
           min="0"
-          value={precoUnitario}
-          onChange={(e) => setPrecoUnitario(e.target.value)}
+          value={valorTotalPago}
+          onChange={(e) => setValorTotalPago(e.target.value)}
           required
         />
         <Input
