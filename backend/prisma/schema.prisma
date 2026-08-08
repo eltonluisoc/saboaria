@@ -97,8 +97,12 @@ model DespesaGeral {
   categoria          String?
   recorrente         Boolean   @default(false)
   dataFimRecorrencia DateTime? @map("data_fim_recorrencia")
+  despesaOrigemId    Int?      @map("despesa_origem_id")
   dataDespesa        DateTime  @map("data_despesa")
   createdAt          DateTime  @default(now()) @map("created_at")
+
+  despesaOrigem   DespesaGeral?  @relation("DespesaRecorrencia", fields: [despesaOrigemId], references: [id], onDelete: SetNull)
+  despesasGeradas DespesaGeral[] @relation("DespesaRecorrencia")
 
   @@map("despesas_gerais")
 }

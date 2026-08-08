@@ -80,6 +80,17 @@ export function DespesasPage() {
                 ),
             },
             {
+              header: "Origem",
+              render: (row) =>
+                row.despesaOrigemId !== null ? (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                    Gerada automaticamente
+                  </span>
+                ) : (
+                  "—"
+                ),
+            },
+            {
               header: "Ações",
               render: (row) => (
                 <div className="flex gap-3">

@@ -58,6 +58,7 @@ export interface DespesaGeral {
   categoria: string | null;
   recorrente: boolean;
   dataFimRecorrencia: string | null;
+  despesaOrigemId: number | null;
   dataDespesa: string;
   createdAt: string;
 }

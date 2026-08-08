@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
+const { gerarDespesasRecorrentesPendentes } = require("../services/despesaService");
 
 function parseId(param) {
   const id = Number(param);
@@ -78,6 +79,8 @@ async function listar(req, res) {
   if (erro) {
     return res.status(400).json({ error: erro });
   }
+
+  await gerarDespesasRecorrentesPendentes();
 
   const where = {};
   if (dataDe && dataAteExclusiva) {

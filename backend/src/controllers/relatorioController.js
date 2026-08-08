@@ -1,12 +1,15 @@
 const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
+const { gerarDespesasRecorrentesPendentes } = require("../services/despesaService");
 
 async function vendasDespesas(req, res) {
   const { erro, dataDe, dataAteExclusiva } = parsePeriodo(req.query);
   if (erro) {
     return res.status(400).json({ error: erro });
   }
+
+  await gerarDespesasRecorrentesPendentes();
 
   const [vendas, despesas] = await Promise.all([
     prisma.pedido.aggregate({
