@@ -8,5 +8,6 @@ router.use(authMiddleware);
 
 router.get("/", pedidoController.listar);
 router.get("/:id", pedidoController.detalhe);
+router.post("/:id/cancelar", pedidoController.cancelar);
 
 module.exports = router;

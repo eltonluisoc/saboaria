@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { Venda as Pedido } from "../types";
 
@@ -34,5 +34,13 @@ export function usePedido(id: number | undefined) {
     queryKey: ["pedidos", id],
     queryFn: () => api.get<Pedido>(`/api/admin/pedidos/${id}`),
     enabled: id !== undefined,
+  });
+}
+
+export function useCancelarPedido() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<Pedido>(`/api/admin/pedidos/${id}/cancelar`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
   });
 }

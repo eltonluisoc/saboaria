@@ -58,4 +58,29 @@ async function detalhe(req, res) {
   return res.json(pedido);
 }
 
-module.exports = { listar, detalhe };
+async function cancelar(req, res) {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) {
+    return res.status(404).json({ error: "Pedido nao encontrado" });
+  }
+
+  if (pedido.status !== "pendente") {
+    return res.status(409).json({
+      error: `Pedido ja esta '${pedido.status}' - so e possivel cancelar pedidos pendentes`,
+    });
+  }
+
+  const atualizado = await prisma.pedido.update({
+    where: { id },
+    data: { status: "cancelado" },
+  });
+
+  return res.json(atualizado);
+}
+
+module.exports = { listar, detalhe, cancelar };

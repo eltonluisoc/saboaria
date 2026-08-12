@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { usePedido } from "../hooks/usePedidos";
+import { usePedido, useCancelarPedido } from "../hooks/usePedidos";
+import { Button } from "../components/ui/Button";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
 import { Table } from "../components/ui/Table";
+import { ApiError } from "../lib/api";
 
 const STATUS_CLASSES: Record<string, string> = {
   pago: "bg-emerald-100 text-emerald-700",
@@ -13,6 +16,18 @@ export function PedidoDetailPage() {
   const { id } = useParams();
   const pedidoId = Number(id);
   const { data: pedido, isLoading, error } = usePedido(pedidoId);
+  const cancelarPedido = useCancelarPedido();
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function handleCancelar() {
+    if (!confirm("Cancelar esse pedido? Essa ação não pode ser desfeita.")) return;
+    setActionError(null);
+    try {
+      await cancelarPedido.mutateAsync(pedidoId);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Erro ao cancelar pedido");
+    }
+  }
 
   if (isLoading) return <Spinner />;
   if (error || !pedido) return <ErrorBanner message="Pedido não encontrado" />;
@@ -33,11 +48,27 @@ export function PedidoDetailPage() {
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
             {pedido.origem}
           </span>
+          {pedido.status === "pendente" && (
+            <Button
+              type="button"
+              variant="danger"
+              className="ml-auto"
+              onClick={handleCancelar}
+              disabled={cancelarPedido.isPending}
+            >
+              {cancelarPedido.isPending ? "Cancelando..." : "Cancelar pedido"}
+            </Button>
+          )}
         </div>
         <p className="text-sm text-slate-500">
           {new Date(pedido.dataPedido).toLocaleString("pt-BR")} · Forma de pagamento:{" "}
           {pedido.formaPagamento ?? "—"}
         </p>
+        {actionError && (
+          <div className="mt-2">
+            <ErrorBanner message={actionError} />
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
