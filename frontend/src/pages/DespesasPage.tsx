@@ -1,5 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { useCriarDespesa, useDespesas, useEditarDespesa, useRemoverDespesa } from "../hooks/useDespesas";
+import {
+  useCriarDespesa,
+  useDespesas,
+  useEditarDespesa,
+  useMarcarDespesaEmAberto,
+  useMarcarDespesaPaga,
+  useRemoverDespesa,
+} from "../hooks/useDespesas";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
@@ -14,6 +21,8 @@ export function DespesasPage() {
   const { data: despesas, isLoading, error } = useDespesas(de && ate ? { de, ate } : undefined);
   const [modalDespesa, setModalDespesa] = useState<DespesaGeral | null | undefined>(undefined);
   const remover = useRemoverDespesa();
+  const marcarPaga = useMarcarDespesaPaga();
+  const marcarEmAberto = useMarcarDespesaEmAberto();
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleRemover(despesa: DespesaGeral) {
@@ -23,6 +32,19 @@ export function DespesasPage() {
       await remover.mutateAsync(despesa.id);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Erro ao remover despesa");
+    }
+  }
+
+  async function handleAlternarPagamento(despesa: DespesaGeral) {
+    setActionError(null);
+    try {
+      if (despesa.pago) {
+        await marcarEmAberto.mutateAsync(despesa.id);
+      } else {
+        await marcarPaga.mutateAsync(despesa.id);
+      }
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Erro ao atualizar pagamento");
     }
   }
 
@@ -91,9 +113,30 @@ export function DespesasPage() {
                 ),
             },
             {
+              header: "Pagamento",
+              render: (row) =>
+                row.pago ? (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    Paga
+                    {row.dataPagamento &&
+                      ` em ${new Date(row.dataPagamento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}`}
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    Em aberto
+                  </span>
+                ),
+            },
+            {
               header: "Ações",
               render: (row) => (
                 <div className="flex gap-3">
+                  <button
+                    className="text-sm text-slate-600 hover:underline"
+                    onClick={() => handleAlternarPagamento(row)}
+                  >
+                    {row.pago ? "Marcar como em aberto" : "Marcar como paga"}
+                  </button>
                   <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalDespesa(row)}>
                     Editar
                   </button>

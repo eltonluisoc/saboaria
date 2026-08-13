@@ -11,5 +11,7 @@ router.get("/", despesaController.listar);
 router.get("/:id", despesaController.detalhe);
 router.put("/:id", despesaController.editar);
 router.delete("/:id", despesaController.remover);
+router.post("/:id/marcar-paga", despesaController.marcarComoPaga);
+router.post("/:id/marcar-em-aberto", despesaController.marcarComoEmAberto);
 
 module.exports = router;

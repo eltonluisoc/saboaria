@@ -11,25 +11,31 @@ async function vendasDespesas(req, res) {
 
   await gerarDespesasRecorrentesPendentes();
 
-  const [vendas, despesas] = await Promise.all([
+  const [vendas, despesasPagas, despesasEmAberto] = await Promise.all([
     prisma.pedido.aggregate({
       where: { status: "pago", dataPedido: { gte: dataDe, lt: dataAteExclusiva } },
       _sum: { valorTotal: true },
     }),
     prisma.despesaGeral.aggregate({
-      where: { dataDespesa: { gte: dataDe, lt: dataAteExclusiva } },
+      where: { dataDespesa: { gte: dataDe, lt: dataAteExclusiva }, pago: true },
+      _sum: { valor: true },
+    }),
+    prisma.despesaGeral.aggregate({
+      where: { dataDespesa: { gte: dataDe, lt: dataAteExclusiva }, pago: false },
       _sum: { valor: true },
     }),
   ]);
 
   const totalVendas = vendas._sum.valorTotal || new Prisma.Decimal(0);
-  const totalDespesas = despesas._sum.valor || new Prisma.Decimal(0);
-  const lucro = totalVendas.minus(totalDespesas);
+  const totalDespesasPagas = despesasPagas._sum.valor || new Prisma.Decimal(0);
+  const totalDespesasEmAberto = despesasEmAberto._sum.valor || new Prisma.Decimal(0);
+  const lucro = totalVendas.minus(totalDespesasPagas);
 
   return res.json({
     periodo: { de: req.query.de, ate: req.query.ate },
     totalVendas,
-    totalDespesas,
+    totalDespesasPagas,
+    totalDespesasEmAberto,
     lucro,
   });
 }

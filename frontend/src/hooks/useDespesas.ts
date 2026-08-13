@@ -47,3 +47,25 @@ export function useRemoverDespesa() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["despesas"] }),
   });
 }
+
+export function useMarcarDespesaPaga() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<DespesaGeral>(`/api/admin/despesas/${id}/marcar-paga`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["despesas"] });
+      qc.invalidateQueries({ queryKey: ["relatorio"] });
+    },
+  });
+}
+
+export function useMarcarDespesaEmAberto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<DespesaGeral>(`/api/admin/despesas/${id}/marcar-em-aberto`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["despesas"] });
+      qc.invalidateQueries({ queryKey: ["relatorio"] });
+    },
+  });
+}

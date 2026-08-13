@@ -98,6 +98,8 @@ model DespesaGeral {
   recorrente         Boolean   @default(false)
   dataFimRecorrencia DateTime? @map("data_fim_recorrencia")
   despesaOrigemId    Int?      @map("despesa_origem_id")
+  pago               Boolean   @default(false)
+  dataPagamento      DateTime? @map("data_pagamento")
   dataDespesa        DateTime  @map("data_despesa")
   createdAt          DateTime  @default(now()) @map("created_at")
 

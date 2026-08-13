@@ -159,4 +159,44 @@ async function remover(req, res) {
   }
 }
 
-module.exports = { criar, listar, detalhe, editar, remover };
+async function marcarComoPaga(req, res) {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  try {
+    const despesa = await prisma.despesaGeral.update({
+      where: { id },
+      data: { pago: true, dataPagamento: new Date() },
+    });
+    return res.json(despesa);
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Despesa nao encontrada" });
+    }
+    throw err;
+  }
+}
+
+async function marcarComoEmAberto(req, res) {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  try {
+    const despesa = await prisma.despesaGeral.update({
+      where: { id },
+      data: { pago: false, dataPagamento: null },
+    });
+    return res.json(despesa);
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Despesa nao encontrada" });
+    }
+    throw err;
+  }
+}
+
+module.exports = { criar, listar, detalhe, editar, remover, marcarComoPaga, marcarComoEmAberto };

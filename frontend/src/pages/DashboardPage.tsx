@@ -43,9 +43,10 @@ export function DashboardPage() {
       )}
 
       {data && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card title="Total de vendas" value={formatMoeda(data.totalVendas)} tone="emerald" />
-          <Card title="Total de despesas" value={formatMoeda(data.totalDespesas)} tone="red" />
+          <Card title="Despesas pagas" value={formatMoeda(data.totalDespesasPagas)} tone="red" />
+          <Card title="Despesas em aberto" value={formatMoeda(data.totalDespesasEmAberto)} tone="amber" />
           <Card
             title="Lucro"
             value={formatMoeda(data.lucro)}
@@ -57,8 +58,8 @@ export function DashboardPage() {
   );
 }
 
-function Card({ title, value, tone }: { title: string; value: string; tone: "emerald" | "red" }) {
-  const toneClass = tone === "emerald" ? "text-emerald-700" : "text-red-700";
+function Card({ title, value, tone }: { title: string; value: string; tone: "emerald" | "red" | "amber" }) {
+  const toneClass = tone === "emerald" ? "text-emerald-700" : tone === "amber" ? "text-amber-700" : "text-red-700";
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm text-slate-500">{title}</p>

@@ -59,6 +59,8 @@ export interface DespesaGeral {
   recorrente: boolean;
   dataFimRecorrencia: string | null;
   despesaOrigemId: number | null;
+  pago: boolean;
+  dataPagamento: string | null;
   dataDespesa: string;
   createdAt: string;
 }
@@ -107,6 +109,7 @@ export interface LoteProducao {
 export interface Relatorio {
   periodo: { de: string; ate: string };
   totalVendas: string;
-  totalDespesas: string;
+  totalDespesasPagas: string;
+  totalDespesasEmAberto: string;
   lucro: string;
 }
