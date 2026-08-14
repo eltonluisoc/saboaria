@@ -4,7 +4,12 @@ const { enviarAtualizacaoPedido } = require("./emailService");
 
 const SEURASTREIO_BASE_URL = "https://seurastreio.com.br";
 
-function eventoEhEntrega(descricao) {
+// "entregue" e um dos slugs de evento oficiais da API do Seu Rastreio
+// (confirmado registrando o webhook de producao: em_curso, saiu_para_entrega,
+// aguardando_retirada, em_devolucao, devolvido, entregue, nao_postado) -
+// mais confiavel que so procurar "entregue" no texto da descricao.
+function eventoEhEntrega(codigoEvento, descricao) {
+  if (codigoEvento === "entregue") return true;
   return typeof descricao === "string" && descricao.toLowerCase().includes("entregue");
 }
 
@@ -77,7 +82,7 @@ async function registrarEventoNovo(pedidoId, { codigoEvento, descricao, local, d
     return;
   }
 
-  const entregue = eventoEhEntrega(descricao);
+  const entregue = eventoEhEntrega(codigoEvento, descricao);
   const novoStatus = entregue ? "concluido" : pedido.status;
 
   await prisma.$transaction([
