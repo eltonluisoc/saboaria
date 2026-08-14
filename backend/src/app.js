@@ -13,6 +13,7 @@ const relatorioRoutes = require("./routes/relatorioRoutes");
 const catalogoRoutes = require("./routes/catalogoRoutes");
 const checkoutRoutes = require("./routes/checkoutRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
+const rastreioPublicoRoutes = require("./routes/rastreioPublicoRoutes");
 
 const app = express();
 
@@ -33,7 +34,13 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(cookieParser());
 
 app.use("/api/admin", authRoutes);
@@ -47,6 +54,7 @@ app.use("/api/admin/relatorio", relatorioRoutes);
 app.use("/api/produtos", catalogoRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/webhooks", webhookRoutes);
+app.use("/api/pedidos-publico", rastreioPublicoRoutes);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

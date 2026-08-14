@@ -9,5 +9,7 @@ router.use(authMiddleware);
 router.get("/", pedidoController.listar);
 router.get("/:id", pedidoController.detalhe);
 router.post("/:id/cancelar", pedidoController.cancelar);
+router.put("/:id/rastreio", pedidoController.atualizarRastreio);
+router.post("/:id/avancar-status", pedidoController.avancarStatus);
 
 module.exports = router;

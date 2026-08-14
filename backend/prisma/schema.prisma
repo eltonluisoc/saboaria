@@ -126,22 +126,41 @@ model Cliente {
 }
 
 model Pedido {
-  id             Int      @id @default(autoincrement())
-  clienteId      Int?     @map("cliente_id")
-  origem         String   @default("manual")
-  status         String   @default("pendente")
-  valorTotal     Decimal  @map("valor_total") @db.Decimal(12, 2)
-  formaPagamento String?  @map("forma_pagamento")
-  mpPreferenceId String?  @map("mp_preference_id")
-  mpPaymentId    String?  @map("mp_payment_id")
-  dataPedido     DateTime @default(now()) @map("data_pedido")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                   Int      @id @default(autoincrement())
+  clienteId            Int?     @map("cliente_id")
+  origem               String   @default("manual")
+  status               String   @default("pendente")
+  valorTotal           Decimal  @map("valor_total") @db.Decimal(12, 2)
+  formaPagamento       String?  @map("forma_pagamento")
+  mpPreferenceId       String?  @map("mp_preference_id")
+  mpPaymentId          String?  @map("mp_payment_id")
+  codigoRastreio       String?  @map("codigo_rastreio")
+  statusRastreioAtual  String?  @map("status_rastreio_atual")
+  ultimoEventoRastreio String?  @map("ultimo_evento_rastreio")
+  codigoAcesso         String   @unique @default(dbgenerated("gen_random_uuid()")) @map("codigo_acesso")
+  dataPedido           DateTime @default(now()) @map("data_pedido")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
-  cliente Cliente?     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
-  itens   ItemPedido[]
+  cliente         Cliente?         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  itens           ItemPedido[]
+  rastreioEventos RastreioEvento[]
 
   @@map("pedidos")
+}
+
+model RastreioEvento {
+  id           Int      @id @default(autoincrement())
+  pedidoId     Int      @map("pedido_id")
+  codigoEvento String   @map("codigo_evento")
+  descricao    String
+  local        String?
+  dataEvento   DateTime @map("data_evento")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@map("rastreio_eventos")
 }
 
 model ItemPedido {

@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { usePedido, useCancelarPedido } from "../hooks/usePedidos";
+import {
+  usePedido,
+  useCancelarPedido,
+  useAtualizarRastreio,
+  useAvancarStatusPedido,
+} from "../hooks/usePedidos";
 import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
 import { Table } from "../components/ui/Table";
 import { ApiError } from "../lib/api";
@@ -9,7 +15,14 @@ import { ApiError } from "../lib/api";
 const STATUS_CLASSES: Record<string, string> = {
   pago: "bg-emerald-100 text-emerald-700",
   pendente: "bg-amber-100 text-amber-700",
+  enviado: "bg-indigo-100 text-indigo-700",
+  concluido: "bg-emerald-100 text-emerald-700",
   cancelado: "bg-red-100 text-red-700",
+};
+
+const PROXIMO_STATUS: Record<string, string> = {
+  pago: "enviado",
+  enviado: "concluído",
 };
 
 export function PedidoDetailPage() {
@@ -17,6 +30,9 @@ export function PedidoDetailPage() {
   const pedidoId = Number(id);
   const { data: pedido, isLoading, error } = usePedido(pedidoId);
   const cancelarPedido = useCancelarPedido();
+  const avancarStatus = useAvancarStatusPedido();
+  const atualizarRastreio = useAtualizarRastreio(pedidoId);
+  const [codigoRastreio, setCodigoRastreio] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleCancelar() {
@@ -26,6 +42,27 @@ export function PedidoDetailPage() {
       await cancelarPedido.mutateAsync(pedidoId);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Erro ao cancelar pedido");
+    }
+  }
+
+  async function handleAvancarStatus() {
+    setActionError(null);
+    try {
+      await avancarStatus.mutateAsync(pedidoId);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Erro ao avançar status");
+    }
+  }
+
+  async function handleSalvarRastreio(e: FormEvent) {
+    e.preventDefault();
+    if (!codigoRastreio.trim()) return;
+    setActionError(null);
+    try {
+      await atualizarRastreio.mutateAsync(codigoRastreio.trim());
+      setCodigoRastreio("");
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Erro ao salvar código de rastreio");
     }
   }
 
@@ -57,6 +94,19 @@ export function PedidoDetailPage() {
               disabled={cancelarPedido.isPending}
             >
               {cancelarPedido.isPending ? "Cancelando..." : "Cancelar pedido"}
+            </Button>
+          )}
+          {PROXIMO_STATUS[pedido.status] && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="ml-auto"
+              onClick={handleAvancarStatus}
+              disabled={avancarStatus.isPending}
+            >
+              {avancarStatus.isPending
+                ? "Avançando..."
+                : `Marcar como ${PROXIMO_STATUS[pedido.status]}`}
             </Button>
           )}
         </div>
@@ -107,6 +157,36 @@ export function PedidoDetailPage() {
           </span>
         </div>
       </div>
+
+      {(pedido.status === "pago" || pedido.status === "enviado" || pedido.status === "concluido") && (
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-lg font-medium text-slate-800">Rastreio</h2>
+          {pedido.codigoRastreio ? (
+            <p className="mb-3 text-sm text-slate-600">
+              Código: <span className="font-medium text-slate-800">{pedido.codigoRastreio}</span>
+              {pedido.statusRastreioAtual && (
+                <>
+                  {" "}
+                  · Último status: <span className="text-slate-800">{pedido.statusRastreioAtual}</span>
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="mb-3 text-sm text-slate-500">Nenhum código de rastreio registrado ainda.</p>
+          )}
+          <form onSubmit={handleSalvarRastreio} className="flex flex-wrap items-end gap-3">
+            <Input
+              label={pedido.codigoRastreio ? "Atualizar código de rastreio" : "Código de rastreio"}
+              value={codigoRastreio}
+              onChange={(e) => setCodigoRastreio(e.target.value)}
+              placeholder="ex: BR123456789BR"
+            />
+            <Button type="submit" variant="secondary" disabled={atualizarRastreio.isPending}>
+              {atualizarRastreio.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </form>
+        </div>
+      )}
 
       {pedido.mpPaymentId && (
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

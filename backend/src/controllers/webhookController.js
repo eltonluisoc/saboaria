@@ -1,5 +1,7 @@
 const { validarAssinaturaWebhook } = require("../utils/mpSignature");
+const { validarAssinaturaSeuRastreio } = require("../utils/seuRastreioSignature");
 const { confirmarPagamento } = require("../services/pedidoService");
+const { processarEventoWebhook } = require("../services/rastreioService");
 
 async function mercadoPago(req, res) {
   const assinaturaValida = validarAssinaturaWebhook(req);
@@ -24,4 +26,20 @@ async function mercadoPago(req, res) {
   return res.status(200).send("ok");
 }
 
-module.exports = { mercadoPago };
+async function seuRastreio(req, res) {
+  const assinaturaValida = validarAssinaturaSeuRastreio(req);
+  if (!assinaturaValida) {
+    console.warn("Webhook Seu Rastreio com assinatura invalida ou ausente");
+    return res.status(401).json({ error: "Assinatura invalida" });
+  }
+
+  try {
+    await processarEventoWebhook(req.body);
+  } catch (err) {
+    console.error("Erro ao processar webhook do Seu Rastreio:", err.message);
+  }
+
+  return res.status(200).send("ok");
+}
+
+module.exports = { mercadoPago, seuRastreio };

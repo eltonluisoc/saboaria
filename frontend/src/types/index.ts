@@ -90,11 +90,29 @@ export interface Venda {
   formaPagamento: string | null;
   mpPreferenceId?: string | null;
   mpPaymentId?: string | null;
+  codigoRastreio?: string | null;
+  statusRastreioAtual?: string | null;
+  codigoAcesso?: string;
   dataPedido: string;
   createdAt: string;
   updatedAt: string;
   itens: ItemPedido[];
   cliente?: Cliente | null;
+}
+
+export interface RastreioEvento {
+  descricao: string;
+  local: string | null;
+  dataEvento: string;
+}
+
+export interface PedidoPublico {
+  id: number;
+  status: string;
+  dataPedido: string;
+  statusRastreioAtual: string | null;
+  itens: { nome: string; quantidade: number }[];
+  eventos: RastreioEvento[];
 }
 
 export interface LoteProducao {

@@ -1,8 +1,10 @@
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
+const { consultarERegistrar } = require("../services/rastreioService");
 
-const STATUS_VALIDOS = ["pendente", "pago", "cancelado"];
+const STATUS_VALIDOS = ["pendente", "pago", "enviado", "concluido", "cancelado"];
 const ORIGENS_VALIDAS = ["site", "manual"];
+const FLUXO_STATUS = ["pago", "enviado", "concluido"];
 
 function parseId(param) {
   const id = Number(param);
@@ -83,4 +85,75 @@ async function cancelar(req, res) {
   return res.json(atualizado);
 }
 
-module.exports = { listar, detalhe, cancelar };
+async function atualizarRastreio(req, res) {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  const { codigoRastreio } = req.body || {};
+  if (typeof codigoRastreio !== "string" || !codigoRastreio.trim()) {
+    return res.status(400).json({ error: "Campo 'codigoRastreio' e obrigatorio" });
+  }
+
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) {
+    return res.status(404).json({ error: "Pedido nao encontrado" });
+  }
+
+  if (pedido.status !== "pago" && pedido.status !== "enviado") {
+    return res.status(400).json({
+      error: "So e possivel registrar rastreio de pedidos pagos (ou ja enviados)",
+    });
+  }
+
+  const codigo = codigoRastreio.trim();
+  const primeiraVez = !pedido.codigoRastreio;
+
+  const atualizado = await prisma.pedido.update({
+    where: { id },
+    data: {
+      codigoRastreio: codigo,
+      status: primeiraVez && pedido.status === "pago" ? "enviado" : pedido.status,
+    },
+  });
+
+  if (primeiraVez) {
+    try {
+      await consultarERegistrar(id, codigo);
+    } catch (err) {
+      console.error(`Erro ao registrar codigo de rastreio ${codigo} pro pedido ${id}:`, err.message);
+    }
+  }
+
+  return res.json(atualizado);
+}
+
+async function avancarStatus(req, res) {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) {
+    return res.status(404).json({ error: "Pedido nao encontrado" });
+  }
+
+  const indiceAtual = FLUXO_STATUS.indexOf(pedido.status);
+  if (indiceAtual === -1 || indiceAtual === FLUXO_STATUS.length - 1) {
+    return res.status(409).json({
+      error: `Pedido em '${pedido.status}' nao pode avancar de status`,
+    });
+  }
+
+  const proximoStatus = FLUXO_STATUS[indiceAtual + 1];
+  const atualizado = await prisma.pedido.update({
+    where: { id },
+    data: { status: proximoStatus },
+  });
+
+  return res.json(atualizado);
+}
+
+module.exports = { listar, detalhe, cancelar, atualizarRastreio, avancarStatus };

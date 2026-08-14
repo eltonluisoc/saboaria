@@ -18,4 +18,8 @@ module.exports = {
   backendUrl: process.env.BACKEND_URL || `http://localhost:${port}`,
   mercadoPagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || null,
   mercadoPagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET || null,
+  resendApiKey: process.env.RESEND_API_KEY || null,
+  emailFrom: process.env.EMAIL_FROM || null,
+  seuRastreioApiKey: process.env.SEURASTREIO_API_KEY || null,
+  seuRastreioWebhookSecret: process.env.SEURASTREIO_WEBHOOK_SECRET || null,
 };

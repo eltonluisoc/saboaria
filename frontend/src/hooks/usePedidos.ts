@@ -44,3 +44,20 @@ export function useCancelarPedido() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
   });
 }
+
+export function useAtualizarRastreio(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (codigoRastreio: string) =>
+      api.put<Pedido>(`/api/admin/pedidos/${id}/rastreio`, { codigoRastreio }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
+  });
+}
+
+export function useAvancarStatusPedido() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<Pedido>(`/api/admin/pedidos/${id}/avancar-status`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
+  });
+}

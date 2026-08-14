@@ -21,6 +21,7 @@ import { ProdutoPage } from "./site/pages/ProdutoPage";
 import { CarrinhoPage } from "./site/pages/CarrinhoPage";
 import { CheckoutPage } from "./site/pages/CheckoutPage";
 import { CheckoutRetornoPage } from "./site/pages/CheckoutRetornoPage";
+import { PedidoAcompanhamentoPage } from "./site/pages/PedidoAcompanhamentoPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/carrinho" element={<CarrinhoPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/checkout/retorno" element={<CheckoutRetornoPage />} />
+              <Route path="/pedido/:codigoAcesso" element={<PedidoAcompanhamentoPage />} />
             </Route>
 
             {/* painel admin */}
