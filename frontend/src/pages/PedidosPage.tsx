@@ -80,7 +80,10 @@ export function PedidosPage() {
                 </span>
               ),
             },
-            { header: "Itens", render: (row) => row.itens.length },
+            {
+              header: "Itens",
+              render: (row) => row.itens.reduce((soma, item) => soma + item.quantidade, 0),
+            },
             { header: "Total", render: (row) => `R$ ${Number(row.valorTotal).toFixed(2)}` },
             {
               header: "Status",

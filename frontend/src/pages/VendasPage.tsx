@@ -186,7 +186,10 @@ export function VendasPage() {
             keyField={(row) => row.id}
             columns={[
               { header: "Data", render: (row) => new Date(row.dataPedido).toLocaleString("pt-BR") },
-              { header: "Itens", render: (row) => row.itens.length },
+              {
+                header: "Itens",
+                render: (row) => row.itens.reduce((soma, item) => soma + item.quantidade, 0),
+              },
               { header: "Total", render: (row) => `R$ ${Number(row.valorTotal).toFixed(2)}` },
               { header: "Forma de pagamento", render: (row) => row.formaPagamento ?? "—" },
               {
