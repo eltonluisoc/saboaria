@@ -1,7 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const { nodeEnv, frontendUrl } = require("./config/env");
+const { nodeEnv, frontendUrls } = require("./config/env");
 const authRoutes = require("./routes/authRoutes");
 const insumoRoutes = require("./routes/insumoRoutes");
 const produtoRoutes = require("./routes/produtoRoutes");
@@ -26,7 +26,7 @@ app.use(
       if (nodeEnv !== "production" && LOCALHOST_ORIGIN.test(origin)) {
         return callback(null, true);
       }
-      if (frontendUrl && origin === frontendUrl) {
+      if (frontendUrls.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error("Origem nao permitida pelo CORS"));
