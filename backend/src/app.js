@@ -17,6 +17,16 @@ const rastreioPublicoRoutes = require("./routes/rastreioPublicoRoutes");
 
 const app = express();
 
+// Render fica atras de um proxy reverso (o X-Forwarded-For chega com o IP
+// real do visitante). Sem isso, o Express nao confia nesse header, e o
+// express-rate-limit do login acaba tratando toda requisicao como vinda do
+// mesmo IP (o proprio proxy) - juntando o limite de tentativas de todo
+// mundo num balde so, em vez de por visitante. "1" = confia exatamente um
+// hop de proxy na frente (o edge do Render), nao a cadeia inteira.
+if (nodeEnv === "production") {
+  app.set("trust proxy", 1);
+}
+
 const LOCALHOST_ORIGIN = /^http:\/\/localhost:\d+$/;
 
 app.use(
