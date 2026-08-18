@@ -5,9 +5,11 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { ErrorBanner } from "../components/ui/Spinner";
 import { ApiError } from "../lib/api";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 export function LoginPage() {
   const { login, admin } = useAuth();
+  useDocumentTitle("Saboraria — Painel Admin");
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");

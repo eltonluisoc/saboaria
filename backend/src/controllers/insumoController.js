@@ -11,7 +11,7 @@ function parseId(param) {
 }
 
 function validarInsumoBody(body) {
-  const { nome, unidadeMedida, quantidadeInicial, precoUnitarioInicial } = body || {};
+  const { nome, unidadeMedida, quantidadeInicial, precoUnitarioInicial, estoqueMinimo } = body || {};
   if (typeof nome !== "string" || !nome.trim()) {
     return "Campo 'nome' e obrigatorio";
   }
@@ -37,6 +37,13 @@ function validarInsumoBody(body) {
     }
   }
 
+  if (estoqueMinimo !== undefined && estoqueMinimo !== null) {
+    const minimo = Number(estoqueMinimo);
+    if (!Number.isFinite(minimo) || minimo < 0) {
+      return "Campo 'estoqueMinimo' deve ser um numero maior ou igual a zero";
+    }
+  }
+
   return null;
 }
 
@@ -46,19 +53,20 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, unidadeMedida, quantidadeInicial, precoUnitarioInicial } = req.body;
+  const { nome, unidadeMedida, quantidadeInicial, precoUnitarioInicial, estoqueMinimo } = req.body;
   const temCompraInicial = quantidadeInicial !== undefined && quantidadeInicial !== null;
+  const estoqueMinimoValor = estoqueMinimo !== undefined && estoqueMinimo !== null ? estoqueMinimo : null;
 
   if (!temCompraInicial) {
     const insumo = await prisma.insumo.create({
-      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() },
+      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim(), estoqueMinimo: estoqueMinimoValor },
     });
     return res.status(201).json(insumo);
   }
 
   const insumo = await prisma.$transaction(async (tx) => {
     const novoInsumo = await tx.insumo.create({
-      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() },
+      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim(), estoqueMinimo: estoqueMinimoValor },
     });
 
     await tx.compraInsumo.create({
@@ -113,12 +121,16 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, unidadeMedida } = req.body;
+  const { nome, unidadeMedida, estoqueMinimo } = req.body;
+  const data = { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() };
+  if (estoqueMinimo !== undefined) {
+    data.estoqueMinimo = estoqueMinimo !== null ? estoqueMinimo : null;
+  }
 
   try {
     const insumo = await prisma.insumo.update({
       where: { id },
-      data: { nome: nome.trim(), unidadeMedida: unidadeMedida.trim() },
+      data,
     });
     return res.json(insumo);
   } catch (err) {

@@ -111,6 +111,7 @@ function InsumoFormModal({ insumo, onClose }: { insumo: Insumo | null; onClose: 
   const [unidadeMedida, setUnidadeMedida] = useState(insumo?.unidadeMedida ?? "");
   const [quantidadeInicial, setQuantidadeInicial] = useState("");
   const [precoUnitarioInicial, setPrecoUnitarioInicial] = useState("");
+  const [estoqueMinimo, setEstoqueMinimo] = useState(insumo?.estoqueMinimo ?? "");
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarInsumo();
   const editar = useEditarInsumo(insumo?.id ?? 0);
@@ -121,13 +122,18 @@ function InsumoFormModal({ insumo, onClose }: { insumo: Insumo | null; onClose: 
     setError(null);
     try {
       if (insumo) {
-        await editar.mutateAsync({ nome, unidadeMedida });
+        await editar.mutateAsync({
+          nome,
+          unidadeMedida,
+          estoqueMinimo: estoqueMinimo ? Number(estoqueMinimo) : null,
+        });
       } else {
         await criar.mutateAsync({
           nome,
           unidadeMedida,
           quantidadeInicial: quantidadeInicial ? Number(quantidadeInicial) : undefined,
           precoUnitarioInicial: precoUnitarioInicial ? Number(precoUnitarioInicial) : undefined,
+          estoqueMinimo: estoqueMinimo ? Number(estoqueMinimo) : null,
         });
       }
       onClose();
@@ -146,6 +152,14 @@ function InsumoFormModal({ insumo, onClose }: { insumo: Insumo | null; onClose: 
           value={unidadeMedida}
           onChange={(e) => setUnidadeMedida(e.target.value)}
           required
+        />
+        <Input
+          label="Estoque mínimo (alerta, opcional)"
+          type="number"
+          step="any"
+          min="0"
+          value={estoqueMinimo}
+          onChange={(e) => setEstoqueMinimo(e.target.value)}
         />
         {!insumo && (
           <>

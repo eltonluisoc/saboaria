@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner } from "../ui/Spinner";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 const links = [
   { to: "/admin", label: "Dashboard", end: true },
@@ -14,6 +15,7 @@ const links = [
 
 export function ProtectedLayout() {
   const { admin, loading, logout } = useAuth();
+  useDocumentTitle("Saboraria — Painel Admin");
 
   if (loading) {
     return (

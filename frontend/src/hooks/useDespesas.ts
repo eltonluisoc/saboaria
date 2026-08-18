@@ -22,6 +22,7 @@ export interface DespesaInput {
   dataDespesa: string;
   recorrente?: boolean;
   dataFimRecorrencia?: string | null;
+  dataVencimento?: string | null;
 }
 
 export function useCriarDespesa() {

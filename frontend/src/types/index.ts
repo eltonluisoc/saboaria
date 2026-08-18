@@ -9,6 +9,7 @@ export interface Insumo {
   unidadeMedida: string;
   custoUnitarioAtual: string;
   estoqueAtual: string;
+  estoqueMinimo: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +62,7 @@ export interface DespesaGeral {
   despesaOrigemId: number | null;
   pago: boolean;
   dataPagamento: string | null;
+  dataVencimento: string | null;
   dataDespesa: string;
   createdAt: string;
 }
@@ -130,4 +132,35 @@ export interface Relatorio {
   totalDespesasPagas: string;
   totalDespesasEmAberto: string;
   lucro: string;
+  margemLucro: string;
+}
+
+export interface ProdutoMaisVendido {
+  produtoId: number;
+  nome: string;
+  quantidade: number;
+  valor: string;
+}
+
+export interface DespesaVencidaAlerta {
+  id: number;
+  descricao: string;
+  valor: string;
+  categoria: string | null;
+  dataVencimento: string | null;
+  dataDespesa: string;
+}
+
+export interface PedidoPendenteAlerta {
+  id: number;
+  status: string;
+  valorTotal: string;
+  dataPedido: string;
+  cliente: { nome: string } | null;
+}
+
+export interface Alertas {
+  despesasVencidas: DespesaVencidaAlerta[];
+  insumosAbaixoDoMinimo: Insumo[];
+  pedidosPendentes: PedidoPendenteAlerta[];
 }

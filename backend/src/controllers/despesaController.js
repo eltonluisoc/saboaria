@@ -8,7 +8,7 @@ function parseId(param) {
 }
 
 function validarDespesaBody(body, { partial = false } = {}) {
-  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia } = body || {};
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = body || {};
 
   if (!partial || descricao !== undefined) {
     if (typeof descricao !== "string" || !descricao.trim()) {
@@ -49,6 +49,12 @@ function validarDespesaBody(body, { partial = false } = {}) {
     }
   }
 
+  if (dataVencimento !== undefined && dataVencimento !== null) {
+    if (Number.isNaN(Date.parse(dataVencimento))) {
+      return "Campo 'dataVencimento' invalido";
+    }
+  }
+
   return null;
 }
 
@@ -58,7 +64,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia } = req.body;
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
 
   const despesa = await prisma.despesaGeral.create({
     data: {
@@ -68,6 +74,7 @@ async function criar(req, res) {
       dataDespesa: new Date(dataDespesa),
       recorrente: recorrente === undefined ? false : recorrente,
       dataFimRecorrencia: dataFimRecorrencia ? new Date(dataFimRecorrencia) : null,
+      dataVencimento: dataVencimento ? new Date(dataVencimento) : null,
     },
   });
 
@@ -120,7 +127,7 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia } = req.body;
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
   const data = {};
   if (descricao !== undefined) data.descricao = descricao.trim();
   if (valor !== undefined) data.valor = valor;
@@ -129,6 +136,9 @@ async function editar(req, res) {
   if (recorrente !== undefined) data.recorrente = recorrente;
   if (dataFimRecorrencia !== undefined) {
     data.dataFimRecorrencia = dataFimRecorrencia ? new Date(dataFimRecorrencia) : null;
+  }
+  if (dataVencimento !== undefined) {
+    data.dataVencimento = dataVencimento ? new Date(dataVencimento) : null;
   }
 
   try {

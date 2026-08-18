@@ -73,6 +73,14 @@ export function InsumoDetailPage() {
           <span className="font-medium text-slate-700">
             {Number(insumo.estoqueAtual)} {insumo.unidadeMedida}
           </span>
+          {insumo.estoqueMinimo !== null && (
+            <>
+              {" "}· Estoque mínimo:{" "}
+              <span className="font-medium text-slate-700">
+                {Number(insumo.estoqueMinimo)} {insumo.unidadeMedida}
+              </span>
+            </>
+          )}
         </p>
       </div>
 

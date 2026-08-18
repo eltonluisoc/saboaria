@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   useCriarDespesa,
   useDespesas,
@@ -15,15 +15,35 @@ import { Spinner, ErrorBanner } from "../components/ui/Spinner";
 import { ApiError } from "../lib/api";
 import type { DespesaGeral } from "../types";
 
+function hojeISO() {
+  const now = new Date();
+  const ano = now.getFullYear();
+  const mes = String(now.getMonth() + 1).padStart(2, "0");
+  const dia = String(now.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
 export function DespesasPage() {
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  const [filtroInicializado, setFiltroInicializado] = useState(false);
   const { data: despesas, isLoading, error } = useDespesas(de && ate ? { de, ate } : undefined);
   const [modalDespesa, setModalDespesa] = useState<DespesaGeral | null | undefined>(undefined);
   const remover = useRemoverDespesa();
   const marcarPaga = useMarcarDespesaPaga();
   const marcarEmAberto = useMarcarDespesaEmAberto();
   const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (filtroInicializado || !despesas) return;
+    const abertas = despesas.filter((d) => !d.pago);
+    const maisAntiga = abertas.length
+      ? abertas.reduce((min, d) => (d.dataDespesa < min ? d.dataDespesa : min), abertas[0].dataDespesa).slice(0, 10)
+      : hojeISO();
+    setDe(maisAntiga);
+    setAte(hojeISO());
+    setFiltroInicializado(true);
+  }, [despesas, filtroInicializado]);
 
   async function handleRemover(despesa: DespesaGeral) {
     if (!confirm(`Remover a despesa "${despesa.descricao}"?`)) return;
@@ -168,6 +188,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
   const [dataFimRecorrencia, setDataFimRecorrencia] = useState(
     despesa?.dataFimRecorrencia?.slice(0, 10) ?? ""
   );
+  const [dataVencimento, setDataVencimento] = useState(despesa?.dataVencimento?.slice(0, 10) ?? "");
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarDespesa();
   const editar = useEditarDespesa(despesa?.id ?? 0);
@@ -184,6 +205,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
         dataDespesa,
         recorrente,
         dataFimRecorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
+        dataVencimento: dataVencimento || null,
       };
       if (despesa) {
         await editar.mutateAsync(dados);
@@ -217,6 +239,12 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
           value={dataDespesa}
           onChange={(e) => setDataDespesa(e.target.value)}
           required
+        />
+        <Input
+          label="Data de vencimento (opcional, se vazio considera a data da despesa)"
+          type="date"
+          value={dataVencimento}
+          onChange={(e) => setDataVencimento(e.target.value)}
         />
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />

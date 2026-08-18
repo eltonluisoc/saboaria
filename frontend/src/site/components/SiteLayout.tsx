@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useCart } from "../context/CartContext";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 const VALORES = ["Artesanal", "Natural", "Ancestral", "Sustentável", "Feito com amor"];
 
@@ -20,6 +21,7 @@ function CartIcon() {
 
 export function SiteLayout() {
   const { totalItens } = useCart();
+  useDocumentTitle("Lud'E — Sabonetes Artesanais");
 
   return (
     <div className="flex min-h-screen flex-col bg-brand-cream font-sans-brand text-brand-brown">

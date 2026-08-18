@@ -30,6 +30,7 @@ export interface InsumoInput {
   unidadeMedida: string;
   quantidadeInicial?: number;
   precoUnitarioInicial?: number;
+  estoqueMinimo?: number | null;
 }
 
 export function useCriarInsumo() {
