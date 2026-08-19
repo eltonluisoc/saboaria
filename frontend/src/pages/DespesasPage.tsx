@@ -23,6 +23,13 @@ function hojeISO() {
   return `${ano}-${mes}-${dia}`;
 }
 
+function primeiroDiaDoMesISO() {
+  const now = new Date();
+  const ano = now.getFullYear();
+  const mes = String(now.getMonth() + 1).padStart(2, "0");
+  return `${ano}-${mes}-01`;
+}
+
 type StatusFiltro = "todas" | "abertas" | "pagas";
 
 export function DespesasPage() {
@@ -46,11 +53,14 @@ export function DespesasPage() {
     // - contar elas aqui podia fazer o "de" cair depois do "ate" (hoje) e a
     // tela abrir sem nada, ja que nao haveria mais nenhuma em aberto vencida.
     const vencidasNaoPagas = despesas.filter((d) => !d.pago && d.dataDespesa.slice(0, 10) <= hoje);
+    // Com pendencia vencida, comeca nela (mesmo que seja de um mes anterior -
+    // e o que importa pra nao esquecer). Sem nenhuma pendencia, o mes atual
+    // inteiro e o minimo pra dar uma visao gerencial, em vez de so hoje.
     const maisAntiga = vencidasNaoPagas.length
       ? vencidasNaoPagas
           .reduce((min, d) => (d.dataDespesa < min ? d.dataDespesa : min), vencidasNaoPagas[0].dataDespesa)
           .slice(0, 10)
-      : hoje;
+      : primeiroDiaDoMesISO();
     setDe(maisAntiga);
     setAte(hoje);
     setSemPendenciaVencida(vencidasNaoPagas.length === 0);
