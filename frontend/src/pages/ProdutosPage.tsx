@@ -156,14 +156,14 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         />
         <Input
           label="URL da imagem (opcional)"
-          placeholder="https://..."
+          placeholder="/produtos/nome-do-arquivo.jpg"
           value={imagemUrl ?? ""}
           onChange={(e) => setImagemUrl(e.target.value)}
         />
         <p className="-mt-2 text-xs text-slate-500">
-          Pode usar um link direto de imagem hospedada em qualquer lugar — inclusive um link
-          "raw" do GitHub (ex: raw.githubusercontent.com/usuario/repo/main/arquivo.jpg) como
-          opção gratuita de hospedagem.
+          As imagens ficam guardadas dentro do próprio site (carregam mais rápido e com cache
+          correto). Pra adicionar uma foto nova, é só pedir — ela é publicada junto com o site e o
+          caminho (ex: /produtos/novo-sabonete.jpg) entra aqui.
         </p>
         <Input
           label="Preço de venda (R$)"
