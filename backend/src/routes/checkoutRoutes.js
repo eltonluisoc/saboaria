@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.post("/", checkoutController.criar);
 router.post("/confirmar", checkoutController.confirmar);
+router.get("/frete", checkoutController.frete);
 
 module.exports = router;

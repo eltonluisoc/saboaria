@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCatalogo, type ProdutoPublico } from "../hooks/useCatalogo";
-import { useCriarCheckout } from "../hooks/useCheckout";
+import { useCriarCheckout, useFreteFixo } from "../hooks/useCheckout";
 import { Loading } from "../components/Loading";
 import { ApiError } from "../../lib/api";
 
@@ -13,6 +13,7 @@ function formatarPreco(valor: number) {
 export function CheckoutPage() {
   const { itens } = useCart();
   const { data: produtos, isLoading } = useCatalogo();
+  const { data: freteInfo, isLoading: isLoadingFrete } = useFreteFixo();
   const criarCheckout = useCriarCheckout();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ export function CheckoutPage() {
   const [endereco, setEndereco] = useState("");
   const [erro, setErro] = useState<string | null>(null);
 
-  if (isLoading) return <Loading />;
+  if (isLoading || isLoadingFrete) return <Loading />;
 
   const produtosPorId = new Map((produtos ?? []).map((p) => [p.id, p]));
   const linhas: { quantidade: number; produto: ProdutoPublico }[] = [];
@@ -28,7 +29,9 @@ export function CheckoutPage() {
     const produto = produtosPorId.get(item.produtoId);
     if (produto) linhas.push({ quantidade: item.quantidade, produto });
   }
-  const total = linhas.reduce((soma, l) => soma + Number(l.produto.precoVenda) * l.quantidade, 0);
+  const subtotalProdutos = linhas.reduce((soma, l) => soma + Number(l.produto.precoVenda) * l.quantidade, 0);
+  const frete = freteInfo?.valorFrete ?? 0;
+  const total = subtotalProdutos + frete;
 
   if (linhas.length === 0) {
     return (
@@ -116,6 +119,10 @@ export function CheckoutPage() {
                 <span className="font-medium">{formatarPreco(Number(produto.precoVenda) * quantidade)}</span>
               </div>
             ))}
+            <div className="flex justify-between px-4 py-3 text-sm">
+              <span>Frete</span>
+              <span className="font-medium">{formatarPreco(frete)}</span>
+            </div>
             <div className="flex justify-between px-4 py-3 font-serif-brand text-lg text-brand-dark">
               <span>Total</span>
               <span>{formatarPreco(total)}</span>

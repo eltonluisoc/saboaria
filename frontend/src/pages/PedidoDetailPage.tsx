@@ -151,7 +151,8 @@ export function PedidoDetailPage() {
             { header: "Subtotal", render: (row) => `R$ ${Number(row.subtotal).toFixed(2)}` },
           ]}
         />
-        <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
+        <div className="mt-4 flex flex-col items-end gap-1 border-t border-slate-100 pt-4">
+          <span className="text-sm text-slate-500">Frete: R$ {Number(pedido.valorFrete).toFixed(2)}</span>
           <span className="text-lg font-semibold text-slate-800">
             Total: R$ {Number(pedido.valorTotal).toFixed(2)}
           </span>

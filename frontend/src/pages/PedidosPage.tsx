@@ -84,6 +84,7 @@ export function PedidosPage() {
               header: "Itens",
               render: (row) => row.itens.reduce((soma, item) => soma + item.quantidade, 0),
             },
+            { header: "Frete", render: (row) => `R$ ${Number(row.valorFrete).toFixed(2)}` },
             { header: "Total", render: (row) => `R$ ${Number(row.valorTotal).toFixed(2)}` },
             {
               header: "Status",

@@ -31,4 +31,5 @@ module.exports = {
   emailFrom: process.env.EMAIL_FROM || null,
   seuRastreioApiKey: process.env.SEURASTREIO_API_KEY || null,
   seuRastreioWebhookSecret: process.env.SEURASTREIO_WEBHOOK_SECRET || null,
+  freteFixo: Number(process.env.FRETE_FIXO) || 25,
 };

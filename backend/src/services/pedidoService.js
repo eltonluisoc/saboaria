@@ -2,13 +2,16 @@ const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const { payment: paymentClient } = require("../config/mercadopago");
 
-async function criarPedidoComItens(tx, { clienteId, origem, status, formaPagamento, itens, produtosPorId }) {
-  let valorTotal = new Prisma.Decimal(0);
+async function criarPedidoComItens(
+  tx,
+  { clienteId, origem, status, formaPagamento, itens, produtosPorId, valorFrete = 0 }
+) {
+  let valorItens = new Prisma.Decimal(0);
   const itensData = itens.map((item) => {
     const produto = produtosPorId.get(Number(item.produtoId));
     const quantidade = Number(item.quantidade);
     const subtotal = produto.precoVenda.times(quantidade);
-    valorTotal = valorTotal.plus(subtotal);
+    valorItens = valorItens.plus(subtotal);
 
     return {
       produtoId: produto.id,
@@ -18,12 +21,15 @@ async function criarPedidoComItens(tx, { clienteId, origem, status, formaPagamen
     };
   });
 
+  const valorTotal = valorItens.plus(valorFrete);
+
   const novoPedido = await tx.pedido.create({
     data: {
       clienteId: clienteId ? Number(clienteId) : null,
       origem,
       status,
       valorTotal,
+      valorFrete,
       formaPagamento: formaPagamento || null,
     },
   });

@@ -1,7 +1,7 @@
 const prisma = require("../config/prisma");
 const { preference: preferenceClient } = require("../config/mercadopago");
 const { criarPedidoComItens, confirmarPagamento } = require("../services/pedidoService");
-const { frontendUrl, backendUrl, nodeEnv } = require("../config/env");
+const { frontendUrl, backendUrl, nodeEnv, freteFixo } = require("../config/env");
 
 function validarCheckoutBody(body) {
   const { itens, cliente } = body || {};
@@ -91,6 +91,7 @@ async function criar(req, res) {
       formaPagamento: null,
       itens,
       produtosPorId,
+      valorFrete: freteFixo,
     })
   );
 
@@ -101,12 +102,24 @@ async function criar(req, res) {
 
   const preferencia = await preferenceClient().create({
     body: {
-      items: pedido.itens.map((item) => ({
-        title: item.produto.nome,
-        quantity: item.quantidade,
-        unit_price: Number(item.precoUnitario),
-        currency_id: "BRL",
-      })),
+      // O item "Frete" precisa entrar na preference de verdade, nao so ser
+      // somado por tras em valorTotal - o Mercado Pago cobra exatamente a
+      // soma dos items, e confirmarPagamento (pedidoService.js) recusa
+      // marcar como pago se o valor pago divergir do valorTotal esperado.
+      items: [
+        ...pedido.itens.map((item) => ({
+          title: item.produto.nome,
+          quantity: item.quantidade,
+          unit_price: Number(item.precoUnitario),
+          currency_id: "BRL",
+        })),
+        {
+          title: "Frete",
+          quantity: 1,
+          unit_price: Number(pedido.valorFrete),
+          currency_id: "BRL",
+        },
+      ],
       payer: {
         name: cliente.nome,
         email: cliente.email,
@@ -156,4 +169,8 @@ async function confirmar(req, res) {
   }
 }
 
-module.exports = { criar, confirmar };
+function frete(req, res) {
+  return res.json({ valorFrete: freteFixo });
+}
+
+module.exports = { criar, confirmar, frete };

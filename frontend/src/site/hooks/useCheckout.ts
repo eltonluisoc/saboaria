@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 
 export interface ClienteInput {
@@ -33,5 +33,13 @@ export interface StatusPedido {
 export function useConfirmarPagamento() {
   return useMutation({
     mutationFn: (paymentId: string) => api.post<StatusPedido>("/api/checkout/confirmar", { paymentId }),
+  });
+}
+
+export function useFreteFixo() {
+  return useQuery({
+    queryKey: ["checkout", "frete"],
+    queryFn: () => api.get<{ valorFrete: number }>("/api/checkout/frete"),
+    staleTime: Infinity,
   });
 }
