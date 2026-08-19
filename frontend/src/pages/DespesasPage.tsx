@@ -23,10 +23,14 @@ function hojeISO() {
   return `${ano}-${mes}-${dia}`;
 }
 
+type StatusFiltro = "todas" | "abertas" | "pagas";
+
 export function DespesasPage() {
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [filtroInicializado, setFiltroInicializado] = useState(false);
+  const [semPendenciaVencida, setSemPendenciaVencida] = useState(false);
+  const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todas");
   const { data: despesas, isLoading, error } = useDespesas(de && ate ? { de, ate } : undefined);
   const [modalDespesa, setModalDespesa] = useState<DespesaGeral | null | undefined>(undefined);
   const remover = useRemoverDespesa();
@@ -36,14 +40,33 @@ export function DespesasPage() {
 
   useEffect(() => {
     if (filtroInicializado || !despesas) return;
-    const abertas = despesas.filter((d) => !d.pago);
-    const maisAntiga = abertas.length
-      ? abertas.reduce((min, d) => (d.dataDespesa < min ? d.dataDespesa : min), abertas[0].dataDespesa).slice(0, 10)
-      : hojeISO();
+    const hoje = hojeISO();
+    // So conta como "em aberto pra pegar" o que ja venceu (data <= hoje).
+    // Despesas futuras geradas pela recorrencia sao projecao, nao pendencia
+    // - contar elas aqui podia fazer o "de" cair depois do "ate" (hoje) e a
+    // tela abrir sem nada, ja que nao haveria mais nenhuma em aberto vencida.
+    const vencidasNaoPagas = despesas.filter((d) => !d.pago && d.dataDespesa.slice(0, 10) <= hoje);
+    const maisAntiga = vencidasNaoPagas.length
+      ? vencidasNaoPagas
+          .reduce((min, d) => (d.dataDespesa < min ? d.dataDespesa : min), vencidasNaoPagas[0].dataDespesa)
+          .slice(0, 10)
+      : hoje;
     setDe(maisAntiga);
-    setAte(hojeISO());
+    setAte(hoje);
+    setSemPendenciaVencida(vencidasNaoPagas.length === 0);
     setFiltroInicializado(true);
   }, [despesas, filtroInicializado]);
+
+  const totalAberto = despesas?.filter((d) => !d.pago).reduce((soma, d) => soma + Number(d.valor), 0) ?? 0;
+  const totalPago = despesas?.filter((d) => d.pago).reduce((soma, d) => soma + Number(d.valor), 0) ?? 0;
+  const countAberto = despesas?.filter((d) => !d.pago).length ?? 0;
+  const countPago = despesas?.filter((d) => d.pago).length ?? 0;
+
+  const despesasFiltradas = despesas?.filter((d) => {
+    if (statusFiltro === "pagas") return d.pago;
+    if (statusFiltro === "abertas") return !d.pago;
+    return true;
+  });
 
   async function handleRemover(despesa: DespesaGeral) {
     const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null;
@@ -98,13 +121,62 @@ export function DespesasPage() {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { key: "todas", label: "Todas" },
+              { key: "abertas", label: "Não pagas" },
+              { key: "pagas", label: "Pagas" },
+            ] as { key: StatusFiltro; label: string }[]
+          ).map((opcao) => (
+            <button
+              key={opcao.key}
+              onClick={() => setStatusFiltro(opcao.key)}
+              className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                statusFiltro === opcao.key
+                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                  : "border-slate-300 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {opcao.label}
+            </button>
+          ))}
+        </div>
+
+        {despesas && (
+          <div className="flex flex-wrap gap-2 text-sm">
+            <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-700">
+              {countAberto} em aberto · R$ {totalAberto.toFixed(2)}
+            </span>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-700">
+              {countPago} pagas · R$ {totalPago.toFixed(2)}
+            </span>
+          </div>
+        )}
+      </div>
+
       {actionError && <ErrorBanner message={actionError} />}
       {isLoading && <Spinner />}
       {error && <ErrorBanner message="Erro ao carregar despesas" />}
 
-      {despesas && (
+      {semPendenciaVencida && statusFiltro === "todas" && despesasFiltradas?.length === 0 && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+          Nenhuma despesa em aberto vencida — tudo em dia! Use os filtros acima pra ver o histórico pago ou as
+          despesas futuras já projetadas.
+        </div>
+      )}
+
+      {despesasFiltradas && !(semPendenciaVencida && statusFiltro === "todas" && despesasFiltradas.length === 0) && (
         <Table
-          rows={despesas}
+          rows={despesasFiltradas}
+          emptyMessage={
+            statusFiltro === "pagas"
+              ? "Nenhuma despesa paga nesse período."
+              : statusFiltro === "abertas"
+                ? "Nenhuma despesa em aberto nesse período."
+                : "Nenhuma despesa nesse período."
+          }
           keyField={(row) => row.id}
           columns={[
             { header: "Descrição", render: (row) => row.descricao },
