@@ -1,6 +1,9 @@
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
-const { gerarDespesasRecorrentesPendentes } = require("../services/despesaService");
+const {
+  gerarDespesasRecorrentesPendentes,
+  sincronizarOcorrenciasFuturasDaOrigem,
+} = require("../services/despesaService");
 
 function parseId(param) {
   const id = Number(param);
@@ -78,6 +81,10 @@ async function criar(req, res) {
     },
   });
 
+  if (despesa.recorrente) {
+    await gerarDespesasRecorrentesPendentes();
+  }
+
   return res.status(201).json(despesa);
 }
 
@@ -127,6 +134,11 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
+  const despesaAntes = await prisma.despesaGeral.findUnique({ where: { id } });
+  if (!despesaAntes) {
+    return res.status(404).json({ error: "Despesa nao encontrada" });
+  }
+
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
   const data = {};
   if (descricao !== undefined) data.descricao = descricao.trim();
@@ -141,24 +153,32 @@ async function editar(req, res) {
     data.dataVencimento = dataVencimento ? new Date(dataVencimento) : null;
   }
 
-  try {
-    const despesa = await prisma.despesaGeral.update({ where: { id }, data });
-    return res.json(despesa);
-  } catch (err) {
-    if (err.code === "P2025") {
-      return res.status(404).json({ error: "Despesa nao encontrada" });
+  const despesa = await prisma.$transaction(async (tx) => {
+    const atualizada = await tx.despesaGeral.update({ where: { id }, data });
+    // So sincroniza projecoes futuras quando quem foi editada e a origem da
+    // recorrencia (despesaOrigemId nulo) - editar uma copia gerada e so um
+    // ajuste pontual daquele mes, sem efeito nas outras.
+    if (atualizada.despesaOrigemId === null) {
+      await sincronizarOcorrenciasFuturasDaOrigem(tx, despesaAntes, atualizada);
     }
-    throw err;
+    return atualizada;
+  });
+
+  if (despesa.despesaOrigemId === null && despesa.recorrente) {
+    await gerarDespesasRecorrentesPendentes();
   }
+
+  return res.json(despesa);
 }
 
-// Remover uma despesa recorrente (seja a original ou uma copia ja gerada)
-// apaga a serie inteira - origem + todas as copias, inclusive ja pagas -
-// em vez de so aquela linha. Isso evita duas armadilhas: copia excluida
-// reaparecendo sozinha no proximo carregamento (a origem continuava
-// recorrente e gerava de novo) e origem excluida deixando copias orfas
-// com despesaOrigemId nulo, que o gerador passaria a tratar como uma
-// nova origem por engano.
+// Remover uma despesa recorrente (a origem, uma copia ja gerada, ou uma
+// origem que parou de ser recorrente mas ainda tem copias antigas ligadas
+// a ela) apaga a serie inteira - origem + todas as copias, inclusive ja
+// pagas - em vez de so aquela linha. Isso evita duas armadilhas: copia
+// excluida reaparecendo sozinha no proximo carregamento (a origem
+// continuava recorrente e gerava de novo) e origem excluida deixando
+// copias orfas com despesaOrigemId nulo, que o gerador passaria a tratar
+// como uma nova origem por engano.
 async function remover(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
@@ -170,7 +190,11 @@ async function remover(req, res) {
     return res.status(404).json({ error: "Despesa nao encontrada" });
   }
 
-  const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null;
+  const ehOrigemComCopias =
+    despesa.despesaOrigemId === null &&
+    (await prisma.despesaGeral.count({ where: { despesaOrigemId: despesa.id } })) > 0;
+  const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null || ehOrigemComCopias;
+
   if (!fazParteDeRecorrencia) {
     await prisma.despesaGeral.delete({ where: { id } });
     return res.status(204).send();
