@@ -152,21 +152,35 @@ async function editar(req, res) {
   }
 }
 
+// Remover uma despesa recorrente (seja a original ou uma copia ja gerada)
+// apaga a serie inteira - origem + todas as copias, inclusive ja pagas -
+// em vez de so aquela linha. Isso evita duas armadilhas: copia excluida
+// reaparecendo sozinha no proximo carregamento (a origem continuava
+// recorrente e gerava de novo) e origem excluida deixando copias orfas
+// com despesaOrigemId nulo, que o gerador passaria a tratar como uma
+// nova origem por engano.
 async function remover(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: "Id invalido" });
   }
 
-  try {
+  const despesa = await prisma.despesaGeral.findUnique({ where: { id } });
+  if (!despesa) {
+    return res.status(404).json({ error: "Despesa nao encontrada" });
+  }
+
+  const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null;
+  if (!fazParteDeRecorrencia) {
     await prisma.despesaGeral.delete({ where: { id } });
     return res.status(204).send();
-  } catch (err) {
-    if (err.code === "P2025") {
-      return res.status(404).json({ error: "Despesa nao encontrada" });
-    }
-    throw err;
   }
+
+  const raizId = despesa.despesaOrigemId ?? despesa.id;
+  await prisma.despesaGeral.deleteMany({
+    where: { OR: [{ id: raizId }, { despesaOrigemId: raizId }] },
+  });
+  return res.status(204).send();
 }
 
 async function marcarComoPaga(req, res) {

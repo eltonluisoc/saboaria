@@ -46,7 +46,11 @@ export function DespesasPage() {
   }, [despesas, filtroInicializado]);
 
   async function handleRemover(despesa: DespesaGeral) {
-    if (!confirm(`Remover a despesa "${despesa.descricao}"?`)) return;
+    const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null;
+    const mensagem = fazParteDeRecorrencia
+      ? `Remover a despesa recorrente "${despesa.descricao}"? Isso remove TODAS as ocorrências dessa recorrência (inclusive as já pagas) e para a geração automática de novas cópias.`
+      : `Remover a despesa "${despesa.descricao}"?`;
+    if (!confirm(mensagem)) return;
     setActionError(null);
     try {
       await remover.mutateAsync(despesa.id);
