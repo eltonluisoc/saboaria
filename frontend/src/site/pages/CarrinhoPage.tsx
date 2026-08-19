@@ -51,46 +51,50 @@ export function CarrinhoPage() {
 
       <div className="mt-8 divide-y divide-brand-olive/20">
         {linhas.map(({ quantidade, produto }) => (
-          <div key={produto.id} className="flex items-center gap-4 py-5">
-            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-brand-cream">
-              {produto.imagemUrl ? (
-                <img src={produto.imagemUrl} alt={produto.nome} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-cream to-brand-olive/20">
-                  <Sprig className="h-8 w-auto text-brand-olive/50" />
-                </div>
-              )}
+          <div key={produto.id} className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-4 sm:contents">
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-brand-cream">
+                {produto.imagemUrl ? (
+                  <img src={produto.imagemUrl} alt={produto.nome} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-cream to-brand-olive/20">
+                    <Sprig className="h-8 w-auto text-brand-olive/50" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <Link
+                  to={`/produto/${produto.id}`}
+                  className="font-serif-brand text-lg text-brand-dark hover:text-brand-gold"
+                >
+                  {produto.nome}
+                </Link>
+                <p className="text-sm text-brand-brown/70">{formatarPreco(Number(produto.precoVenda))}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <Link
-                to={`/produto/${produto.id}`}
-                className="font-serif-brand text-lg text-brand-dark hover:text-brand-gold"
-              >
-                {produto.nome}
-              </Link>
-              <p className="text-sm text-brand-brown/70">{formatarPreco(Number(produto.precoVenda))}</p>
-            </div>
-            <div className="flex items-center rounded-full border border-brand-olive/30">
-              <button
-                className="px-3 py-1 text-brand-brown hover:text-brand-gold"
-                onClick={() => atualizarQuantidade(produto.id, quantidade - 1)}
-              >
-                −
+            <div className="flex items-center justify-between gap-4 sm:contents">
+              <div className="flex items-center rounded-full border border-brand-olive/30">
+                <button
+                  className="px-3 py-1 text-brand-brown hover:text-brand-gold"
+                  onClick={() => atualizarQuantidade(produto.id, quantidade - 1)}
+                >
+                  −
+                </button>
+                <span className="w-8 text-center">{quantidade}</span>
+                <button
+                  className="px-3 py-1 text-brand-brown hover:text-brand-gold"
+                  onClick={() => atualizarQuantidade(produto.id, quantidade + 1)}
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-right font-medium text-brand-dark sm:w-24">
+                {formatarPreco(Number(produto.precoVenda) * quantidade)}
+              </p>
+              <button onClick={() => remover(produto.id)} className="text-sm text-red-700/70 hover:text-red-700">
+                Remover
               </button>
-              <span className="w-8 text-center">{quantidade}</span>
-              <button
-                className="px-3 py-1 text-brand-brown hover:text-brand-gold"
-                onClick={() => atualizarQuantidade(produto.id, quantidade + 1)}
-              >
-                +
-              </button>
             </div>
-            <p className="w-24 text-right font-medium text-brand-dark">
-              {formatarPreco(Number(produto.precoVenda) * quantidade)}
-            </p>
-            <button onClick={() => remover(produto.id)} className="text-sm text-red-700/70 hover:text-red-700">
-              Remover
-            </button>
           </div>
         ))}
       </div>
