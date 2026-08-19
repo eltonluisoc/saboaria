@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner } from "../ui/Spinner";
@@ -13,8 +14,17 @@ const links = [
   { to: "/admin/lotes", label: "Lotes de Produção" },
 ];
 
+function MenuIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function ProtectedLayout() {
   const { admin, loading, logout } = useAuth();
+  const [menuAberto, setMenuAberto] = useState(false);
   useDocumentTitle("Saboraria — Painel Admin");
 
   if (loading) {
@@ -30,8 +40,27 @@ export function ProtectedLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <aside className="flex w-56 flex-col border-r border-slate-200 bg-white">
+    <div className="flex h-screen flex-col bg-slate-50 md:flex-row">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+        <p className="text-lg font-semibold text-emerald-700">Saboraria</p>
+        <button
+          onClick={() => setMenuAberto(true)}
+          className="rounded-md p-2 text-slate-600 hover:bg-slate-100"
+          aria-label="Abrir menu"
+        >
+          <MenuIcon />
+        </button>
+      </div>
+
+      {menuAberto && (
+        <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setMenuAberto(false)} />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-56 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:static md:z-auto md:w-56 md:translate-x-0 ${
+          menuAberto ? "translate-x-0" : ""
+        }`}
+      >
         <div className="border-b border-slate-200 px-4 py-4">
           <p className="text-lg font-semibold text-emerald-700">Saboraria</p>
           <p className="text-xs text-slate-500">Painel admin</p>
@@ -42,6 +71,7 @@ export function ProtectedLayout() {
               key={link.to}
               to={link.to}
               end={link.end}
+              onClick={() => setMenuAberto(false)}
               className={({ isActive }) =>
                 `block rounded-md px-3 py-2 text-sm font-medium ${
                   isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-100"
