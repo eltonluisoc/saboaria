@@ -112,7 +112,7 @@ export function CheckoutPage() {
           <h2 className="mb-4 font-serif-brand text-xl text-brand-dark">Resumo do pedido</h2>
           <div className="divide-y divide-brand-olive/20 rounded-lg border border-brand-olive/20 bg-white">
             {linhas.map(({ quantidade, produto }) => (
-              <div key={produto.id} className="flex justify-between px-4 py-3 text-sm">
+              <div key={produto.id} className="flex flex-wrap justify-between gap-x-3 gap-y-1 px-4 py-3 text-sm">
                 <span>
                   {produto.nome} <span className="text-brand-brown/50">x{quantidade}</span>
                 </span>
