@@ -31,22 +31,32 @@ export function SiteLayout() {
             <Logo size="sm" />
           </Link>
           <nav className="flex items-center gap-6 text-sm font-medium text-brand-cream">
-            <NavLink to="/" end className={({ isActive }) => (isActive ? "text-brand-gold" : "hover:text-brand-gold")}>
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `-mx-2 rounded px-2 py-2 ${isActive ? "text-brand-gold" : "hover:text-brand-gold"}`
+              }
+            >
               Início
             </NavLink>
             <NavLink
               to="/catalogo"
-              className={({ isActive }) => (isActive ? "text-brand-gold" : "hover:text-brand-gold")}
+              className={({ isActive }) =>
+                `-mx-2 rounded px-2 py-2 ${isActive ? "text-brand-gold" : "hover:text-brand-gold"}`
+              }
             >
               Catálogo
             </NavLink>
-            <Link to="/carrinho" className="relative flex items-center gap-1 hover:text-brand-gold">
-              <CartIcon />
-              {totalItens > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-gold text-[10px] font-semibold text-brand-dark">
-                  {totalItens}
-                </span>
-              )}
+            <Link to="/carrinho" className="-m-2 flex items-center gap-1 p-2 hover:text-brand-gold">
+              <span className="relative flex items-center">
+                <CartIcon />
+                {totalItens > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-gold text-[10px] font-semibold text-brand-dark">
+                    {totalItens}
+                  </span>
+                )}
+              </span>
             </Link>
           </nav>
         </div>
