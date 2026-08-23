@@ -18,9 +18,11 @@ interface CheckoutResponse {
   checkoutUrl: string;
 }
 
+export type FormaEntrega = "envio" | "retirada";
+
 export function useCriarCheckout() {
   return useMutation({
-    mutationFn: (data: { itens: CheckoutItemInput[]; cliente: ClienteInput }) =>
+    mutationFn: (data: { itens: CheckoutItemInput[]; cliente: ClienteInput; formaEntrega: FormaEntrega }) =>
       api.post<CheckoutResponse>("/api/checkout", data),
   });
 }

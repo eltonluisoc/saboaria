@@ -134,6 +134,7 @@ model Pedido {
   status               String   @default("pendente")
   valorTotal           Decimal  @map("valor_total") @db.Decimal(12, 2)
   valorFrete           Decimal  @default(0) @map("valor_frete") @db.Decimal(12, 2)
+  formaEntrega         String?  @map("forma_entrega")
   formaPagamento       String?  @map("forma_pagamento")
   mpPreferenceId       String?  @map("mp_preference_id")
   mpPaymentId          String?  @map("mp_payment_id")

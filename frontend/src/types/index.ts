@@ -90,6 +90,7 @@ export interface Venda {
   status: string;
   valorTotal: string;
   valorFrete: string;
+  formaEntrega: string | null;
   formaPagamento: string | null;
   mpPreferenceId?: string | null;
   mpPaymentId?: string | null;

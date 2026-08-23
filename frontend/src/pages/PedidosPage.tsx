@@ -84,6 +84,10 @@ export function PedidosPage() {
               header: "Itens",
               render: (row) => row.itens.reduce((soma, item) => soma + item.quantidade, 0),
             },
+            {
+              header: "Entrega",
+              render: (row) => (row.formaEntrega === "envio" ? "Envio" : row.formaEntrega === "retirada" ? "Retirada" : "—"),
+            },
             { header: "Frete", render: (row) => `R$ ${Number(row.valorFrete).toFixed(2)}` },
             { header: "Total", render: (row) => `R$ ${Number(row.valorTotal).toFixed(2)}` },
             {

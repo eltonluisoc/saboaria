@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCatalogo, type ProdutoPublico } from "../hooks/useCatalogo";
-import { useCriarCheckout, useFreteFixo } from "../hooks/useCheckout";
+import { useCriarCheckout, useFreteFixo, type FormaEntrega } from "../hooks/useCheckout";
 import { Loading } from "../components/Loading";
 import { ApiError } from "../../lib/api";
 
@@ -19,6 +19,7 @@ export function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [formaEntrega, setFormaEntrega] = useState<FormaEntrega>("envio");
   const [erro, setErro] = useState<string | null>(null);
 
   if (isLoading || isLoadingFrete) return <Loading />;
@@ -30,7 +31,8 @@ export function CheckoutPage() {
     if (produto) linhas.push({ quantidade: item.quantidade, produto });
   }
   const subtotalProdutos = linhas.reduce((soma, l) => soma + Number(l.produto.precoVenda) * l.quantidade, 0);
-  const frete = freteInfo?.valorFrete ?? 0;
+  const freteFixo = freteInfo?.valorFrete ?? 0;
+  const frete = formaEntrega === "envio" ? freteFixo : 0;
   const total = subtotalProdutos + frete;
 
   if (linhas.length === 0) {
@@ -51,6 +53,7 @@ export function CheckoutPage() {
       const resultado = await criarCheckout.mutateAsync({
         itens: itens.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
         cliente: { nome, email, telefone: telefone || undefined, endereco },
+        formaEntrega,
       });
       window.location.href = resultado.checkoutUrl;
     } catch (err) {
@@ -98,6 +101,28 @@ export function CheckoutPage() {
               required
             />
 
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-brand-dark">Forma de entrega</p>
+              <label className="flex items-center gap-2 text-sm text-brand-brown">
+                <input
+                  type="radio"
+                  name="formaEntrega"
+                  checked={formaEntrega === "envio"}
+                  onChange={() => setFormaEntrega("envio")}
+                />
+                Envio ({formatarPreco(freteFixo)})
+              </label>
+              <label className="flex items-center gap-2 text-sm text-brand-brown">
+                <input
+                  type="radio"
+                  name="formaEntrega"
+                  checked={formaEntrega === "retirada"}
+                  onChange={() => setFormaEntrega("retirada")}
+                />
+                Retirada / entrega combinada com o vendedor (sem frete)
+              </label>
+            </div>
+
             <button
               type="submit"
               disabled={criarCheckout.isPending}
@@ -119,10 +144,12 @@ export function CheckoutPage() {
                 <span className="font-medium">{formatarPreco(Number(produto.precoVenda) * quantidade)}</span>
               </div>
             ))}
-            <div className="flex justify-between px-4 py-3 text-sm">
-              <span>Frete</span>
-              <span className="font-medium">{formatarPreco(frete)}</span>
-            </div>
+            {formaEntrega === "envio" && (
+              <div className="flex justify-between px-4 py-3 text-sm">
+                <span>Frete</span>
+                <span className="font-medium">{formatarPreco(frete)}</span>
+              </div>
+            )}
             <div className="flex justify-between px-4 py-3 font-serif-brand text-lg text-brand-dark">
               <span>Total</span>
               <span>{formatarPreco(total)}</span>

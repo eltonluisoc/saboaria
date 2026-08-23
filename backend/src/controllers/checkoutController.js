@@ -3,8 +3,10 @@ const { preference: preferenceClient } = require("../config/mercadopago");
 const { criarPedidoComItens, confirmarPagamento } = require("../services/pedidoService");
 const { frontendUrl, backendUrl, nodeEnv, freteFixo } = require("../config/env");
 
+const FORMAS_ENTREGA_VALIDAS = ["envio", "retirada"];
+
 function validarCheckoutBody(body) {
-  const { itens, cliente } = body || {};
+  const { itens, cliente, formaEntrega } = body || {};
 
   if (!Array.isArray(itens) || itens.length === 0) {
     return "Campo 'itens' deve ser uma lista com pelo menos um item";
@@ -43,6 +45,10 @@ function validarCheckoutBody(body) {
     return "Telefone deve ser texto";
   }
 
+  if (formaEntrega !== undefined && !FORMAS_ENTREGA_VALIDAS.includes(formaEntrega)) {
+    return "Campo 'formaEntrega' deve ser 'envio' ou 'retirada'";
+  }
+
   return null;
 }
 
@@ -52,7 +58,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { itens, cliente: dadosCliente } = req.body;
+  const { itens, cliente: dadosCliente, formaEntrega = "envio" } = req.body;
 
   const produtoIds = itens.map((item) => Number(item.produtoId));
   const produtos = await prisma.produto.findMany({
@@ -83,6 +89,8 @@ async function criar(req, res) {
     },
   });
 
+  const valorFreteAplicado = formaEntrega === "retirada" ? 0 : freteFixo;
+
   const pedido = await prisma.$transaction((tx) =>
     criarPedidoComItens(tx, {
       clienteId: cliente.id,
@@ -91,7 +99,8 @@ async function criar(req, res) {
       formaPagamento: null,
       itens,
       produtosPorId,
-      valorFrete: freteFixo,
+      valorFrete: valorFreteAplicado,
+      formaEntrega,
     })
   );
 
@@ -113,12 +122,16 @@ async function criar(req, res) {
           unit_price: Number(item.precoUnitario),
           currency_id: "BRL",
         })),
-        {
-          title: "Frete",
-          quantity: 1,
-          unit_price: Number(pedido.valorFrete),
-          currency_id: "BRL",
-        },
+        ...(Number(pedido.valorFrete) > 0
+          ? [
+              {
+                title: "Frete",
+                quantity: 1,
+                unit_price: Number(pedido.valorFrete),
+                currency_id: "BRL",
+              },
+            ]
+          : []),
       ],
       payer: {
         name: cliente.nome,
