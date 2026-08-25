@@ -6,6 +6,7 @@ import {
   useAtualizarRastreio,
   useAvancarStatusPedido,
   useMarcarComoRecebido,
+  useAbonarFrete,
 } from "../hooks/usePedidos";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -33,6 +34,7 @@ export function PedidoDetailPage() {
   const cancelarPedido = useCancelarPedido();
   const avancarStatus = useAvancarStatusPedido();
   const marcarComoRecebido = useMarcarComoRecebido();
+  const abonarFrete = useAbonarFrete();
   const atualizarRastreio = useAtualizarRastreio(pedidoId);
   const [codigoRastreio, setCodigoRastreio] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -62,6 +64,17 @@ export function PedidoDetailPage() {
       await marcarComoRecebido.mutateAsync(pedidoId);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Erro ao marcar como recebido");
+    }
+  }
+
+  async function handleAbonarFrete() {
+    const motivo = prompt("Motivo do abono de frete (ex: entrega feita em mãos pelo dono):");
+    if (!motivo || !motivo.trim()) return;
+    setActionError(null);
+    try {
+      await abonarFrete.mutateAsync({ id: pedidoId, motivo: motivo.trim() });
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Erro ao abonar frete");
     }
   }
 
@@ -185,6 +198,21 @@ export function PedidoDetailPage() {
             </span>
           )}
           <span className="text-sm text-slate-500">Frete: R$ {Number(pedido.valorFrete).toFixed(2)}</span>
+          {Number(pedido.valorFrete) > 0 &&
+            (pedido.freteAbonadoMotivo ? (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                Frete abonado: {pedido.freteAbonadoMotivo}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAbonarFrete}
+                disabled={abonarFrete.isPending}
+                className="text-sm text-slate-600 hover:underline"
+              >
+                {abonarFrete.isPending ? "Salvando..." : "Abonar frete"}
+              </button>
+            ))}
           <span className="text-lg font-semibold text-slate-800">
             Total: R$ {Number(pedido.valorTotal).toFixed(2)}
           </span>

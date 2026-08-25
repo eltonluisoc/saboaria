@@ -88,7 +88,22 @@ export function PedidosPage() {
               header: "Entrega",
               render: (row) => (row.formaEntrega === "envio" ? "Envio" : row.formaEntrega === "retirada" ? "Retirada" : "—"),
             },
-            { header: "Frete", render: (row) => `R$ ${Number(row.valorFrete).toFixed(2)}` },
+            {
+              header: "Frete",
+              render: (row) => (
+                <span className="inline-flex items-center gap-2">
+                  R$ {Number(row.valorFrete).toFixed(2)}
+                  {row.freteAbonadoMotivo && (
+                    <span
+                      className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+                      title={row.freteAbonadoMotivo}
+                    >
+                      Abonado
+                    </span>
+                  )}
+                </span>
+              ),
+            },
             { header: "Total", render: (row) => `R$ ${Number(row.valorTotal).toFixed(2)}` },
             {
               header: "Status",

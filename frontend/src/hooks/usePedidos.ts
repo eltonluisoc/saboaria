@@ -69,3 +69,12 @@ export function useMarcarComoRecebido() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
   });
 }
+
+export function useAbonarFrete() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) =>
+      api.post<Pedido>(`/api/admin/pedidos/${id}/abonar-frete`, { motivo }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
+  });
+}

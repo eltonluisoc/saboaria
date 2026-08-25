@@ -168,6 +168,42 @@ async function marcarComoRecebido(req, res) {
   return res.json(atualizado);
 }
 
+// So anotacao - nao mexe em valorTotal/valorFrete (o que foi cobrado de
+// verdade no cartao continua sendo o que consta) nem chama a API de
+// estorno do Mercado Pago. O estorno de dinheiro, quando houver, e feito
+// manualmente pelo dono fora do sistema; isso aqui so registra o motivo.
+async function abonarFrete(req, res) {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Id invalido" });
+  }
+
+  const { motivo } = req.body || {};
+  if (typeof motivo !== "string" || !motivo.trim()) {
+    return res.status(400).json({ error: "Campo 'motivo' e obrigatorio" });
+  }
+
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) {
+    return res.status(404).json({ error: "Pedido nao encontrado" });
+  }
+
+  if (Number(pedido.valorFrete) <= 0) {
+    return res.status(409).json({ error: "Esse pedido nao tem frete cobrado pra abonar" });
+  }
+
+  if (pedido.freteAbonadoMotivo !== null) {
+    return res.status(409).json({ error: "O frete desse pedido ja foi abonado" });
+  }
+
+  const atualizado = await prisma.pedido.update({
+    where: { id },
+    data: { freteAbonadoMotivo: motivo.trim() },
+  });
+
+  return res.json(atualizado);
+}
+
 async function avancarStatus(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
@@ -195,4 +231,4 @@ async function avancarStatus(req, res) {
   return res.json(atualizado);
 }
 
-module.exports = { listar, detalhe, cancelar, atualizarRastreio, avancarStatus, marcarComoRecebido };
+module.exports = { listar, detalhe, cancelar, atualizarRastreio, avancarStatus, marcarComoRecebido, abonarFrete };
