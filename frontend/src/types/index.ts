@@ -64,6 +64,8 @@ export interface DespesaGeral {
   dataPagamento: string | null;
   dataVencimento: string | null;
   dataDespesa: string;
+  compraInsumoId: number | null;
+  compraInsumo?: { insumoId: number } | null;
   createdAt: string;
 }
 
@@ -91,6 +93,8 @@ export interface Venda {
   valorTotal: string;
   valorFrete: string;
   formaEntrega: string | null;
+  freteAbonadoMotivo: string | null;
+  nomeComprador: string | null;
   formaPagamento: string | null;
   mpPreferenceId?: string | null;
   mpPaymentId?: string | null;

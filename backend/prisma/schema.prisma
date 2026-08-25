@@ -41,7 +41,8 @@ model CompraInsumo {
   dataCompra    DateTime @map("data_compra")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  insumo Insumo @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+  insumo        Insumo        @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+  despesaGerada DespesaGeral?
 
   @@map("compras_insumo")
 }
@@ -103,10 +104,12 @@ model DespesaGeral {
   dataPagamento      DateTime? @map("data_pagamento")
   dataVencimento     DateTime? @map("data_vencimento")
   dataDespesa        DateTime  @map("data_despesa")
+  compraInsumoId     Int?      @unique @map("compra_insumo_id")
   createdAt          DateTime  @default(now()) @map("created_at")
 
   despesaOrigem   DespesaGeral?  @relation("DespesaRecorrencia", fields: [despesaOrigemId], references: [id], onDelete: SetNull)
   despesasGeradas DespesaGeral[] @relation("DespesaRecorrencia")
+  compraInsumo    CompraInsumo?  @relation(fields: [compraInsumoId], references: [id], onDelete: SetNull)
 
   @@map("despesas_gerais")
 }
@@ -135,6 +138,8 @@ model Pedido {
   valorTotal           Decimal  @map("valor_total") @db.Decimal(12, 2)
   valorFrete           Decimal  @default(0) @map("valor_frete") @db.Decimal(12, 2)
   formaEntrega         String?  @map("forma_entrega")
+  freteAbonadoMotivo   String?  @map("frete_abonado_motivo")
+  nomeComprador        String?  @map("nome_comprador")
   formaPagamento       String?  @map("forma_pagamento")
   mpPreferenceId       String?  @map("mp_preference_id")
   mpPaymentId          String?  @map("mp_payment_id")

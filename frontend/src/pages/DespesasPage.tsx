@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   useCriarDespesa,
   useDespesas,
@@ -209,14 +210,26 @@ export function DespesasPage() {
             },
             {
               header: "Origem",
-              render: (row) =>
-                row.despesaOrigemId !== null ? (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                    Gerada automaticamente
-                  </span>
-                ) : (
-                  "—"
-                ),
+              render: (row) => {
+                if (row.compraInsumo) {
+                  return (
+                    <Link
+                      to={`/admin/insumos/${row.compraInsumo.insumoId}`}
+                      className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-200"
+                    >
+                      Compra de insumo
+                    </Link>
+                  );
+                }
+                if (row.despesaOrigemId !== null) {
+                  return (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      Gerada automaticamente
+                    </span>
+                  );
+                }
+                return "—";
+              },
             },
             {
               header: "Pagamento",
@@ -235,22 +248,25 @@ export function DespesasPage() {
             },
             {
               header: "Ações",
-              render: (row) => (
-                <div className="flex gap-3">
-                  <button
-                    className="text-sm text-slate-600 hover:underline"
-                    onClick={() => handleAlternarPagamento(row)}
-                  >
-                    {row.pago ? "Marcar como em aberto" : "Marcar como paga"}
-                  </button>
-                  <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalDespesa(row)}>
-                    Editar
-                  </button>
-                  <button className="text-sm text-red-600 hover:underline" onClick={() => handleRemover(row)}>
-                    Remover
-                  </button>
-                </div>
-              ),
+              render: (row) =>
+                row.compraInsumoId !== null ? (
+                  <span className="text-sm text-slate-400">Editar em Insumos</span>
+                ) : (
+                  <div className="flex gap-3">
+                    <button
+                      className="text-sm text-slate-600 hover:underline"
+                      onClick={() => handleAlternarPagamento(row)}
+                    >
+                      {row.pago ? "Marcar como em aberto" : "Marcar como paga"}
+                    </button>
+                    <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalDespesa(row)}>
+                      Editar
+                    </button>
+                    <button className="text-sm text-red-600 hover:underline" onClick={() => handleRemover(row)}>
+                      Remover
+                    </button>
+                  </div>
+                ),
             },
           ]}
         />

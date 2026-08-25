@@ -1,9 +1,19 @@
+const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const {
   recalcularCustoInsumo,
   recalcularCustoProduto,
   recalcularProdutosPorInsumo,
 } = require("../services/custoService");
+
+// Toda compra de insumo e um gasto de verdade e precisa entrar no calculo
+// de lucro do Dashboard - gera (ou atualiza/remove, se a compra mudar) uma
+// despesa vinculada, sempre na mesma transacao da compra. valor da despesa
+// e Decimal(12,2), mas quantidade/precoUnitario da compra sao Decimal(12,4)
+// - arredonda pra 2 casas na conversao.
+function calcularValorDespesaCompra(quantidade, precoUnitario) {
+  return new Prisma.Decimal(quantidade).times(precoUnitario).toDecimalPlaces(2);
+}
 
 function parseId(param) {
   const id = Number(param);
@@ -250,6 +260,18 @@ async function registrarCompra(req, res) {
     const custoUnitarioAtual = await recalcularCustoInsumo(tx, insumoId);
     await recalcularProdutosPorInsumo(tx, insumoId);
 
+    await tx.despesaGeral.create({
+      data: {
+        descricao: `Compra de insumo: ${insumoExiste.nome}`,
+        valor: calcularValorDespesaCompra(quantidade, precoUnitario),
+        categoria: "Compra de insumo",
+        dataDespesa: compra.dataCompra,
+        pago: true,
+        dataPagamento: compra.dataCompra,
+        compraInsumoId: compra.id,
+      },
+    });
+
     return { compra, custoUnitarioAtual };
   });
 
@@ -307,6 +329,15 @@ async function editarCompra(req, res) {
     const custoUnitarioAtual = await recalcularCustoInsumo(tx, insumoId);
     await recalcularProdutosPorInsumo(tx, insumoId);
 
+    await tx.despesaGeral.update({
+      where: { compraInsumoId: compra.id },
+      data: {
+        valor: calcularValorDespesaCompra(quantidade, precoUnitario),
+        dataDespesa: compra.dataCompra,
+        dataPagamento: compra.dataCompra,
+      },
+    });
+
     return { compra, custoUnitarioAtual };
   });
 
@@ -326,6 +357,8 @@ async function removerCompra(req, res) {
   }
 
   await prisma.$transaction(async (tx) => {
+    await tx.despesaGeral.deleteMany({ where: { compraInsumoId: compraId } });
+
     await tx.compraInsumo.delete({ where: { id: compraId } });
 
     await tx.insumo.update({

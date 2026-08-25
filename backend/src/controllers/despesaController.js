@@ -10,6 +10,9 @@ function parseId(param) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+const ERRO_DESPESA_DE_COMPRA =
+  "Essa despesa foi gerada automaticamente por uma compra de insumo - edite ou remova a compra na tela de Insumos.";
+
 function validarDespesaBody(body, { partial = false } = {}) {
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = body || {};
 
@@ -104,6 +107,7 @@ async function listar(req, res) {
   const despesas = await prisma.despesaGeral.findMany({
     where,
     orderBy: { dataDespesa: "desc" },
+    include: { compraInsumo: { select: { insumoId: true } } },
   });
 
   return res.json(despesas);
@@ -115,7 +119,10 @@ async function detalhe(req, res) {
     return res.status(400).json({ error: "Id invalido" });
   }
 
-  const despesa = await prisma.despesaGeral.findUnique({ where: { id } });
+  const despesa = await prisma.despesaGeral.findUnique({
+    where: { id },
+    include: { compraInsumo: { select: { insumoId: true } } },
+  });
   if (!despesa) {
     return res.status(404).json({ error: "Despesa nao encontrada" });
   }
@@ -137,6 +144,9 @@ async function editar(req, res) {
   const despesaAntes = await prisma.despesaGeral.findUnique({ where: { id } });
   if (!despesaAntes) {
     return res.status(404).json({ error: "Despesa nao encontrada" });
+  }
+  if (despesaAntes.compraInsumoId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_DE_COMPRA });
   }
 
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
@@ -189,6 +199,9 @@ async function remover(req, res) {
   if (!despesa) {
     return res.status(404).json({ error: "Despesa nao encontrada" });
   }
+  if (despesa.compraInsumoId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_DE_COMPRA });
+  }
 
   const ehOrigemComCopias =
     despesa.despesaOrigemId === null &&
@@ -213,18 +226,19 @@ async function marcarComoPaga(req, res) {
     return res.status(400).json({ error: "Id invalido" });
   }
 
-  try {
-    const despesa = await prisma.despesaGeral.update({
-      where: { id },
-      data: { pago: true, dataPagamento: new Date() },
-    });
-    return res.json(despesa);
-  } catch (err) {
-    if (err.code === "P2025") {
-      return res.status(404).json({ error: "Despesa nao encontrada" });
-    }
-    throw err;
+  const despesa = await prisma.despesaGeral.findUnique({ where: { id } });
+  if (!despesa) {
+    return res.status(404).json({ error: "Despesa nao encontrada" });
   }
+  if (despesa.compraInsumoId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_DE_COMPRA });
+  }
+
+  const atualizada = await prisma.despesaGeral.update({
+    where: { id },
+    data: { pago: true, dataPagamento: new Date() },
+  });
+  return res.json(atualizada);
 }
 
 async function marcarComoEmAberto(req, res) {
@@ -233,18 +247,19 @@ async function marcarComoEmAberto(req, res) {
     return res.status(400).json({ error: "Id invalido" });
   }
 
-  try {
-    const despesa = await prisma.despesaGeral.update({
-      where: { id },
-      data: { pago: false, dataPagamento: null },
-    });
-    return res.json(despesa);
-  } catch (err) {
-    if (err.code === "P2025") {
-      return res.status(404).json({ error: "Despesa nao encontrada" });
-    }
-    throw err;
+  const despesa = await prisma.despesaGeral.findUnique({ where: { id } });
+  if (!despesa) {
+    return res.status(404).json({ error: "Despesa nao encontrada" });
   }
+  if (despesa.compraInsumoId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_DE_COMPRA });
+  }
+
+  const atualizada = await prisma.despesaGeral.update({
+    where: { id },
+    data: { pago: false, dataPagamento: null },
+  });
+  return res.json(atualizada);
 }
 
 module.exports = { criar, listar, detalhe, editar, remover, marcarComoPaga, marcarComoEmAberto };
