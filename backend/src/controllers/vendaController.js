@@ -10,7 +10,7 @@ function parseId(param) {
 }
 
 function validarVendaBody(body) {
-  const { itens, clienteId, formaPagamento, status } = body || {};
+  const { itens, clienteId, formaPagamento, status, nomeComprador } = body || {};
 
   if (!Array.isArray(itens) || itens.length === 0) {
     return "Campo 'itens' deve ser uma lista com pelo menos um item";
@@ -48,6 +48,10 @@ function validarVendaBody(body) {
     return `Campo 'status' deve ser um de: ${STATUS_VALIDOS.join(", ")}`;
   }
 
+  if (nomeComprador !== undefined && nomeComprador !== null && typeof nomeComprador !== "string") {
+    return "Campo 'nomeComprador' deve ser texto";
+  }
+
   return null;
 }
 
@@ -57,7 +61,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { itens, clienteId, formaPagamento, status } = req.body;
+  const { itens, clienteId, formaPagamento, status, nomeComprador } = req.body;
 
   if (clienteId) {
     const cliente = await prisma.cliente.findUnique({ where: { id: Number(clienteId) } });
@@ -83,6 +87,7 @@ async function criar(req, res) {
       formaPagamento,
       itens,
       produtosPorId,
+      nomeComprador: nomeComprador ? nomeComprador.trim() : null,
     })
   );
 

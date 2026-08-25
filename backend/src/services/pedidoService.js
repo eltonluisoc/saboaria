@@ -4,7 +4,17 @@ const { payment: paymentClient } = require("../config/mercadopago");
 
 async function criarPedidoComItens(
   tx,
-  { clienteId, origem, status, formaPagamento, itens, produtosPorId, valorFrete = 0, formaEntrega = null }
+  {
+    clienteId,
+    origem,
+    status,
+    formaPagamento,
+    itens,
+    produtosPorId,
+    valorFrete = 0,
+    formaEntrega = null,
+    nomeComprador = null,
+  }
 ) {
   let valorItens = new Prisma.Decimal(0);
   const itensData = itens.map((item) => {
@@ -31,6 +41,7 @@ async function criarPedidoComItens(
       valorTotal,
       valorFrete,
       formaEntrega,
+      nomeComprador,
       formaPagamento: formaPagamento || null,
     },
   });

@@ -33,6 +33,7 @@ export function VendasPage() {
   const [quantidadeSelecionada, setQuantidadeSelecionada] = useState("1");
   const [formaPagamento, setFormaPagamento] = useState(FORMAS_PAGAMENTO[0]);
   const [jaRecebeuPagamento, setJaRecebeuPagamento] = useState(true);
+  const [nomeComprador, setNomeComprador] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -68,8 +69,10 @@ export function VendasPage() {
         itens: carrinho.map((i) => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
         formaPagamento,
         status: jaRecebeuPagamento ? "pago" : "pendente",
+        nomeComprador: nomeComprador.trim() || undefined,
       });
       setCarrinho([]);
+      setNomeComprador("");
       setSucesso(true);
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Erro ao registrar venda");
@@ -163,6 +166,11 @@ export function VendasPage() {
 
         <div className="flex flex-wrap items-end justify-between gap-4 border-t border-slate-100 pt-4">
           <div className="space-y-3">
+            <Input
+              label="Nome do comprador (opcional)"
+              value={nomeComprador}
+              onChange={(e) => setNomeComprador(e.target.value)}
+            />
             <Select label="Forma de pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)}>
               {FORMAS_PAGAMENTO.map((forma) => (
                 <option key={forma} value={forma}>
@@ -212,6 +220,7 @@ export function VendasPage() {
                   </Link>
                 ),
               },
+              { header: "Comprador", render: (row) => row.nomeComprador ?? "—" },
               {
                 header: "Itens",
                 render: (row) => row.itens.reduce((soma, item) => soma + item.quantidade, 0),

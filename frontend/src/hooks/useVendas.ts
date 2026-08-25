@@ -24,6 +24,7 @@ export interface VendaInput {
   itens: VendaItemInput[];
   formaPagamento?: string;
   status?: string;
+  nomeComprador?: string;
 }
 
 export function useRegistrarVenda() {

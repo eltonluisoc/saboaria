@@ -156,6 +156,11 @@ export function PedidoDetailPage() {
               <dd className="text-slate-800">{pedido.cliente.email}</dd>
             </div>
           </dl>
+        ) : pedido.nomeComprador ? (
+          <p className="text-sm text-slate-700">
+            Comprador: <span className="font-medium">{pedido.nomeComprador}</span>{" "}
+            <span className="text-slate-500">(venda avulsa)</span>
+          </p>
         ) : (
           <p className="text-sm text-slate-500">Sem cliente vinculado (venda avulsa)</p>
         )}
