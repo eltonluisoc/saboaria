@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useProdutos } from "../hooks/useProdutos";
 import { useRegistrarVenda, useVendas } from "../hooks/useVendas";
 import { Button } from "../components/ui/Button";
@@ -14,6 +15,12 @@ interface ItemCarrinho {
 
 const FORMAS_PAGAMENTO = ["Dinheiro", "Pix", "Cartão de débito", "Cartão de crédito"];
 
+const STATUS_CLASSES: Record<string, string> = {
+  pago: "bg-emerald-100 text-emerald-700",
+  pendente: "bg-amber-100 text-amber-700",
+  cancelado: "bg-red-100 text-red-700",
+};
+
 export function VendasPage() {
   const { data: produtos } = useProdutos();
   const [de, setDe] = useState("");
@@ -25,6 +32,7 @@ export function VendasPage() {
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
   const [quantidadeSelecionada, setQuantidadeSelecionada] = useState("1");
   const [formaPagamento, setFormaPagamento] = useState(FORMAS_PAGAMENTO[0]);
+  const [jaRecebeuPagamento, setJaRecebeuPagamento] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -59,6 +67,7 @@ export function VendasPage() {
       await registrarVenda.mutateAsync({
         itens: carrinho.map((i) => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
         formaPagamento,
+        status: jaRecebeuPagamento ? "pago" : "pendente",
       });
       setCarrinho([]);
       setSucesso(true);
@@ -153,13 +162,23 @@ export function VendasPage() {
         </div>
 
         <div className="flex flex-wrap items-end justify-between gap-4 border-t border-slate-100 pt-4">
-          <Select label="Forma de pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)}>
-            {FORMAS_PAGAMENTO.map((forma) => (
-              <option key={forma} value={forma}>
-                {forma}
-              </option>
-            ))}
-          </Select>
+          <div className="space-y-3">
+            <Select label="Forma de pagamento" value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)}>
+              {FORMAS_PAGAMENTO.map((forma) => (
+                <option key={forma} value={forma}>
+                  {forma}
+                </option>
+              ))}
+            </Select>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={jaRecebeuPagamento}
+                onChange={(e) => setJaRecebeuPagamento(e.target.checked)}
+              />
+              Já recebi o pagamento
+            </label>
+          </div>
           <div className="text-right">
             <p className="text-sm text-slate-500">Total</p>
             <p className="text-xl font-semibold text-slate-800">R$ {total.toFixed(2)}</p>
@@ -185,7 +204,14 @@ export function VendasPage() {
             rows={vendas}
             keyField={(row) => row.id}
             columns={[
-              { header: "Data", render: (row) => new Date(row.dataPedido).toLocaleString("pt-BR") },
+              {
+                header: "Data",
+                render: (row) => (
+                  <Link to={`/admin/pedidos/${row.id}`} className="font-medium text-emerald-700 hover:underline">
+                    {new Date(row.dataPedido).toLocaleString("pt-BR")}
+                  </Link>
+                ),
+              },
               {
                 header: "Itens",
                 render: (row) => row.itens.reduce((soma, item) => soma + item.quantidade, 0),
@@ -195,7 +221,7 @@ export function VendasPage() {
               {
                 header: "Status",
                 render: (row) => (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[row.status] ?? ""}`}>
                     {row.status}
                   </span>
                 ),

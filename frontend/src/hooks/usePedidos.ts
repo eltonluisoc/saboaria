@@ -61,3 +61,11 @@ export function useAvancarStatusPedido() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
   });
 }
+
+export function useMarcarComoRecebido() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<Pedido>(`/api/admin/pedidos/${id}/marcar-recebido`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
+  });
+}

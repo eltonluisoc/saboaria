@@ -5,6 +5,7 @@ import {
   useCancelarPedido,
   useAtualizarRastreio,
   useAvancarStatusPedido,
+  useMarcarComoRecebido,
 } from "../hooks/usePedidos";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -31,6 +32,7 @@ export function PedidoDetailPage() {
   const { data: pedido, isLoading, error } = usePedido(pedidoId);
   const cancelarPedido = useCancelarPedido();
   const avancarStatus = useAvancarStatusPedido();
+  const marcarComoRecebido = useMarcarComoRecebido();
   const atualizarRastreio = useAtualizarRastreio(pedidoId);
   const [codigoRastreio, setCodigoRastreio] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -51,6 +53,15 @@ export function PedidoDetailPage() {
       await avancarStatus.mutateAsync(pedidoId);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Erro ao avançar status");
+    }
+  }
+
+  async function handleMarcarComoRecebido() {
+    setActionError(null);
+    try {
+      await marcarComoRecebido.mutateAsync(pedidoId);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Erro ao marcar como recebido");
     }
   }
 
@@ -85,11 +96,22 @@ export function PedidoDetailPage() {
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
             {pedido.origem}
           </span>
+          {pedido.status === "pendente" && pedido.origem === "manual" && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="ml-auto"
+              onClick={handleMarcarComoRecebido}
+              disabled={marcarComoRecebido.isPending}
+            >
+              {marcarComoRecebido.isPending ? "Marcando..." : "Marcar como recebido"}
+            </Button>
+          )}
           {pedido.status === "pendente" && (
             <Button
               type="button"
               variant="danger"
-              className="ml-auto"
+              className={pedido.origem === "manual" ? "" : "ml-auto"}
               onClick={handleCancelar}
               disabled={cancelarPedido.isPending}
             >
