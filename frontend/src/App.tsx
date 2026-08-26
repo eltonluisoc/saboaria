@@ -23,7 +23,6 @@ const InsumoDetailPage = lazy(() => import("./pages/InsumoDetailPage").then((m) 
 const ProdutosPage = lazy(() => import("./pages/ProdutosPage").then((m) => ({ default: m.ProdutosPage })));
 const ProdutoDetailPage = lazy(() => import("./pages/ProdutoDetailPage").then((m) => ({ default: m.ProdutoDetailPage })));
 const DespesasPage = lazy(() => import("./pages/DespesasPage").then((m) => ({ default: m.DespesasPage })));
-const VendasPage = lazy(() => import("./pages/VendasPage").then((m) => ({ default: m.VendasPage })));
 const PedidosPage = lazy(() => import("./pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
 const PedidoDetailPage = lazy(() => import("./pages/PedidoDetailPage").then((m) => ({ default: m.PedidoDetailPage })));
 const LotesPage = lazy(() => import("./pages/LotesPage").then((m) => ({ default: m.LotesPage })));
@@ -81,7 +80,6 @@ export default function App() {
                 <Route path="produtos" element={<ProdutosPage />} />
                 <Route path="produtos/:id" element={<ProdutoDetailPage />} />
                 <Route path="despesas" element={<DespesasPage />} />
-                <Route path="vendas" element={<VendasPage />} />
                 <Route path="pedidos" element={<PedidosPage />} />
                 <Route path="pedidos/:id" element={<PedidoDetailPage />} />
                 <Route path="lotes" element={<LotesPage />} />
