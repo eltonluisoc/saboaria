@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   useCriarDespesa,
@@ -16,28 +16,15 @@ import { Spinner, ErrorBanner } from "../components/ui/Spinner";
 import { ApiError } from "../lib/api";
 import type { DespesaGeral } from "../types";
 
-function hojeISO() {
-  const now = new Date();
-  const ano = now.getFullYear();
-  const mes = String(now.getMonth() + 1).padStart(2, "0");
-  const dia = String(now.getDate()).padStart(2, "0");
-  return `${ano}-${mes}-${dia}`;
-}
-
-function primeiroDiaDoMesISO() {
-  const now = new Date();
-  const ano = now.getFullYear();
-  const mes = String(now.getMonth() + 1).padStart(2, "0");
-  return `${ano}-${mes}-01`;
-}
-
 type StatusFiltro = "todas" | "abertas" | "pagas";
 
 export function DespesasPage() {
+  // Sem filtro de data por padrao - mostra tudo, pra bater com os totais do
+  // Dashboard e nao confundir (um recorte por data so aqui dava a impressao
+  // de numero errado quando comparado com o Dashboard, que nao tem esse
+  // recorte). Quem quiser um periodo especifico aplica o filtro manualmente.
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
-  const [filtroInicializado, setFiltroInicializado] = useState(false);
-  const [semPendenciaVencida, setSemPendenciaVencida] = useState(false);
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todas");
   const { data: despesas, isLoading, error } = useDespesas(de && ate ? { de, ate } : undefined);
   const [modalDespesa, setModalDespesa] = useState<DespesaGeral | null | undefined>(undefined);
@@ -45,28 +32,6 @@ export function DespesasPage() {
   const marcarPaga = useMarcarDespesaPaga();
   const marcarEmAberto = useMarcarDespesaEmAberto();
   const [actionError, setActionError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (filtroInicializado || !despesas) return;
-    const hoje = hojeISO();
-    // So conta como "em aberto pra pegar" o que ja venceu (data <= hoje).
-    // Despesas futuras geradas pela recorrencia sao projecao, nao pendencia
-    // - contar elas aqui podia fazer o "de" cair depois do "ate" (hoje) e a
-    // tela abrir sem nada, ja que nao haveria mais nenhuma em aberto vencida.
-    const vencidasNaoPagas = despesas.filter((d) => !d.pago && d.dataDespesa.slice(0, 10) <= hoje);
-    // Com pendencia vencida, comeca nela (mesmo que seja de um mes anterior -
-    // e o que importa pra nao esquecer). Sem nenhuma pendencia, o mes atual
-    // inteiro e o minimo pra dar uma visao gerencial, em vez de so hoje.
-    const maisAntiga = vencidasNaoPagas.length
-      ? vencidasNaoPagas
-          .reduce((min, d) => (d.dataDespesa < min ? d.dataDespesa : min), vencidasNaoPagas[0].dataDespesa)
-          .slice(0, 10)
-      : primeiroDiaDoMesISO();
-    setDe(maisAntiga);
-    setAte(hoje);
-    setSemPendenciaVencida(vencidasNaoPagas.length === 0);
-    setFiltroInicializado(true);
-  }, [despesas, filtroInicializado]);
 
   const totalAberto = despesas?.filter((d) => !d.pago).reduce((soma, d) => soma + Number(d.valor), 0) ?? 0;
   const totalPago = despesas?.filter((d) => d.pago).reduce((soma, d) => soma + Number(d.valor), 0) ?? 0;
@@ -171,14 +136,7 @@ export function DespesasPage() {
       {isLoading && <Spinner />}
       {error && <ErrorBanner message="Erro ao carregar despesas" />}
 
-      {semPendenciaVencida && statusFiltro === "todas" && despesasFiltradas?.length === 0 && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-          Nenhuma despesa em aberto vencida — tudo em dia! Use os filtros acima pra ver o histórico pago ou as
-          despesas futuras já projetadas.
-        </div>
-      )}
-
-      {despesasFiltradas && !(semPendenciaVencida && statusFiltro === "todas" && despesasFiltradas.length === 0) && (
+      {despesasFiltradas && (
         <Table
           rows={despesasFiltradas}
           emptyMessage={
