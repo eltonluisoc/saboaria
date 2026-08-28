@@ -3,6 +3,12 @@ const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
 const { gerarDespesasRecorrentesPendentes } = require("../services/despesaService");
 
+// Um pedido que avancou no fluxo (pago -> enviado -> concluido) continua
+// sendo uma venda de verdade - so "pendente" (ainda nao pago) e "cancelado"
+// nao contam como faturamento. Contar so status==='pago' fazia a venda
+// sumir do relatorio assim que o pedido avancava de status.
+const STATUS_VENDA_CONFIRMADA = ["pago", "enviado", "concluido"];
+
 async function vendasDespesas(req, res) {
   const { erro, dataDe, dataAteExclusiva } = parsePeriodo(req.query);
   if (erro) {
@@ -13,7 +19,7 @@ async function vendasDespesas(req, res) {
 
   const [vendas, despesasPagas, despesasEmAberto] = await Promise.all([
     prisma.pedido.aggregate({
-      where: { status: "pago", dataPedido: { gte: dataDe, lt: dataAteExclusiva } },
+      where: { status: { in: STATUS_VENDA_CONFIRMADA }, dataPedido: { gte: dataDe, lt: dataAteExclusiva } },
       _sum: { valorTotal: true },
     }),
     prisma.despesaGeral.aggregate({
@@ -57,7 +63,7 @@ async function produtosMaisVendidos(req, res) {
     FROM itens_pedido ip
     JOIN pedidos pe ON pe.id = ip.pedido_id
     JOIN produtos p ON p.id = ip.produto_id
-    WHERE pe.status = 'pago' AND pe.data_pedido >= ${dataDe} AND pe.data_pedido < ${dataAteExclusiva}
+    WHERE pe.status IN ('pago', 'enviado', 'concluido') AND pe.data_pedido >= ${dataDe} AND pe.data_pedido < ${dataAteExclusiva}
     GROUP BY p.id, p.nome
     ORDER BY quantidade DESC
     LIMIT 10
