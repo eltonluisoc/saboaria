@@ -114,21 +114,21 @@ export function HomePage() {
         </Link>
 
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-1.5 transition-opacity duration-500 ${
-            cueVisible ? "opacity-70" : "opacity-0"
+          className={`pointer-events-none relative z-10 mt-10 flex flex-col items-center gap-2 transition-opacity duration-500 ${
+            cueVisible ? "opacity-100" : "opacity-0"
           }`}
           aria-hidden="true"
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-brand-gold">
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-gold">
             Role para saber mais
           </span>
           <svg
-            width="16"
-            height="16"
+            width="22"
+            height="22"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.8"
+            strokeWidth="2"
             className="animate-bounce text-brand-gold motion-reduce:animate-none"
           >
             <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
