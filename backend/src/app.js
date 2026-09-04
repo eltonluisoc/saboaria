@@ -17,6 +17,14 @@ const rastreioPublicoRoutes = require("./routes/rastreioPublicoRoutes");
 
 const app = express();
 
+// Rota leve pra manter o servico acordado no plano gratuito do Render (que
+// desliga sozinho depois de 15 min sem trafego) - um servico externo de ping
+// (ex: cron-job.org) acessa isso a cada poucos minutos. De proposito nao
+// toca no banco, so responde rapido pra contar como "servico ativo".
+app.get("/health", (req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 // Render fica atras de um proxy reverso (o X-Forwarded-For chega com o IP
 // real do visitante). Sem isso, o Express nao confia nesse header, e o
 // express-rate-limit do login acaba tratando toda requisicao como vinda do

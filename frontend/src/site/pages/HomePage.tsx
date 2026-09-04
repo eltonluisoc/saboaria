@@ -58,11 +58,26 @@ function useHeroParallax() {
   return ref;
 }
 
+// Dica de rolagem: some assim que a pessoa começa a rolar (fica só nos
+// primeiros pixels da página), pra convidar a descer sem incomodar depois.
+function useScrollCueVisible() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY < 24);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return visible;
+}
+
 export function HomePage() {
   const { data: produtos, isLoading } = useCatalogo();
   const destaques = (produtos ?? []).slice(0, 4);
   const mounted = useMountReveal();
   const parallaxRef = useHeroParallax();
+  const cueVisible = useScrollCueVisible();
 
   return (
     <div>
@@ -97,6 +112,28 @@ export function HomePage() {
         >
           Ver catálogo
         </Link>
+
+        <div
+          className={`pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-1.5 transition-opacity duration-500 ${
+            cueVisible ? "opacity-70" : "opacity-0"
+          }`}
+          aria-hidden="true"
+        >
+          <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-brand-gold">
+            Role para saber mais
+          </span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            className="animate-bounce text-brand-gold motion-reduce:animate-none"
+          >
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
       </section>
 
       <section className="px-6 py-16 sm:py-20">
