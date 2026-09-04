@@ -11,22 +11,22 @@ export function HomePage() {
 
   return (
     <div>
-      <section className="relative flex flex-col items-center justify-center overflow-hidden bg-brand-dark px-6 py-28 text-center sm:py-36">
-        <Sprig className="pointer-events-none absolute -right-20 -top-16 h-[500px] w-auto rotate-[10deg] text-brand-gold/5" />
+      <section className="relative flex flex-col items-center justify-center overflow-hidden bg-brand-dark px-6 py-12 text-center sm:py-16">
+        <Sprig className="pointer-events-none absolute -right-14 -top-8 h-[240px] w-auto rotate-[10deg] text-brand-gold/5" />
 
         <Logo size="lg" className="relative z-10" />
 
         <Link
           to="/catalogo"
-          className="relative z-10 mt-12 rounded-full bg-brand-gold px-10 py-4 text-xs font-semibold uppercase tracking-[0.22em] text-brand-dark transition-transform hover:scale-105"
+          className="relative z-10 mt-6 rounded-full bg-brand-gold px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-dark transition-transform hover:scale-105"
         >
           Ver catálogo
         </Link>
       </section>
 
-      <section className="px-6 py-24 sm:py-28">
+      <section className="px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-16 flex items-end justify-between gap-6">
+          <div className="mb-10 flex items-end justify-between gap-6">
             <div>
               <span className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">
                 Coleção atual
