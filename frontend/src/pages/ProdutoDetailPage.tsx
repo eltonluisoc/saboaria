@@ -88,6 +88,7 @@ export function ProdutoDetailPage() {
     : 0;
 
   const margem = Number(produto.precoVenda) - Number(produto.custoMedio);
+  const margemReal = Number(produto.precoVenda) - produto.custoUnitarioCompleto;
 
   return (
     <div className="space-y-6">
@@ -102,8 +103,12 @@ export function ProdutoDetailPage() {
           {Number(produto.custoMedio).toFixed(2)} · Custo completo (c/ rateio): R${" "}
           {produto.custoUnitarioCompleto.toFixed(2)} · Peso da unidade:{" "}
           {produto.pesoUnidadeGramas ? `${produto.pesoUnidadeGramas}g` : "não definido"} · Estoque:{" "}
-          {produto.estoqueAtual} · Margem:{" "}
-          <span className={margem >= 0 ? "text-emerald-700" : "text-red-700"}>R$ {margem.toFixed(2)}</span>
+          {produto.estoqueAtual} · Margem (insumos):{" "}
+          <span className={margem >= 0 ? "text-emerald-700" : "text-red-700"}>R$ {margem.toFixed(2)}</span> ·{" "}
+          <strong>Margem real (c/ rateio)</strong>:{" "}
+          <span className={`font-medium ${margemReal >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+            R$ {margemReal.toFixed(2)}
+          </span>
         </p>
       </div>
 

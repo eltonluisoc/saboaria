@@ -58,9 +58,8 @@ export function ProdutosPage() {
               header: "Custo completo (c/ rateio)",
               render: (row) => `R$ ${row.custoUnitarioCompleto.toFixed(2)}`,
             },
-            { header: "Estoque", render: (row) => row.estoqueAtual },
             {
-              header: "Margem",
+              header: "Margem (insumos)",
               render: (row) => {
                 const margem = Number(row.precoVenda) - Number(row.custoMedio);
                 return (
@@ -70,6 +69,18 @@ export function ProdutosPage() {
                 );
               },
             },
+            {
+              header: "Margem real (c/ rateio)",
+              render: (row) => {
+                const margemReal = Number(row.precoVenda) - row.custoUnitarioCompleto;
+                return (
+                  <span className={`font-medium ${margemReal >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                    R$ {margemReal.toFixed(2)}
+                  </span>
+                );
+              },
+            },
+            { header: "Estoque", render: (row) => row.estoqueAtual },
             {
               header: "Status",
               render: (row) => (
