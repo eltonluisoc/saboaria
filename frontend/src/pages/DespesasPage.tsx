@@ -152,8 +152,24 @@ export function DespesasPage() {
             { header: "Categoria", render: (row) => row.categoria ?? "—" },
             { header: "Valor", render: (row) => `R$ ${Number(row.valor).toFixed(2)}` },
             {
-              header: "Data",
-              render: (row) => new Date(row.dataDespesa).toLocaleDateString("pt-BR", { timeZone: "UTC" }),
+              header: "Data de pagamento",
+              render: (row) => {
+                const dataEfetiva = row.dataVencimento ?? row.dataDespesa;
+                const formatada = new Date(dataEfetiva).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+                // Quando ha vencimento diferente da data de lancamento, mostra os
+                // dois - a data de pagamento e a que manda (filtro, ordenacao),
+                // mas a data de lancamento continua visivel como referencia.
+                if (row.dataVencimento && row.dataVencimento !== row.dataDespesa) {
+                  const lancamento = new Date(row.dataDespesa).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+                  return (
+                    <span>
+                      {formatada}
+                      <span className="block text-xs text-slate-400">lançada em {lancamento}</span>
+                    </span>
+                  );
+                }
+                return formatada;
+              },
             },
             {
               header: "Recorrente",

@@ -1,3 +1,4 @@
+const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
 const {
@@ -99,16 +100,38 @@ async function listar(req, res) {
 
   await gerarDespesasRecorrentesPendentes();
 
-  const where = {};
-  if (dataDe && dataAteExclusiva) {
-    where.dataDespesa = { gte: dataDe, lt: dataAteExclusiva };
-  }
+  // A data que importa pra listar/filtrar/ordenar despesas e o vencimento,
+  // quando ele existe - senao, a data da despesa. Antes o filtro e a
+  // ordenacao usavam sempre data_despesa, entao uma despesa lancada hoje
+  // com vencimento no mes que vem nao aparecia no periodo certo (mesma
+  // logica de COALESCE ja usada em relatorioController.alertas pras
+  // "despesas vencidas").
+  const filtroPeriodo =
+    dataDe && dataAteExclusiva
+      ? Prisma.sql`WHERE COALESCE(d.data_vencimento, d.data_despesa) >= ${dataDe} AND COALESCE(d.data_vencimento, d.data_despesa) < ${dataAteExclusiva}`
+      : Prisma.empty;
 
-  const despesas = await prisma.despesaGeral.findMany({
-    where,
-    orderBy: { dataDespesa: "desc" },
-    include: { compraInsumo: { select: { insumoId: true } } },
-  });
+  const linhas = await prisma.$queryRaw`
+    SELECT
+      d.id, d.descricao, d.valor, d.categoria, d.recorrente,
+      d.data_fim_recorrencia AS "dataFimRecorrencia",
+      d.despesa_origem_id AS "despesaOrigemId",
+      d.pago, d.data_pagamento AS "dataPagamento",
+      d.data_vencimento AS "dataVencimento",
+      d.data_despesa AS "dataDespesa",
+      d.compra_insumo_id AS "compraInsumoId",
+      d.created_at AS "createdAt",
+      ci.insumo_id AS "compraInsumoInsumoId"
+    FROM despesas_gerais d
+    LEFT JOIN compras_insumo ci ON ci.id = d.compra_insumo_id
+    ${filtroPeriodo}
+    ORDER BY COALESCE(d.data_vencimento, d.data_despesa) DESC
+  `;
+
+  const despesas = linhas.map(({ compraInsumoInsumoId, ...despesa }) => ({
+    ...despesa,
+    compraInsumo: compraInsumoInsumoId !== null ? { insumoId: compraInsumoInsumoId } : null,
+  }));
 
   return res.json(despesas);
 }

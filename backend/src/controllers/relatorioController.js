@@ -17,24 +17,33 @@ async function vendasDespesas(req, res) {
 
   await gerarDespesasRecorrentesPendentes();
 
-  const [vendas, despesasPagas, despesasEmAberto] = await Promise.all([
+  // Mesma logica de COALESCE(data_vencimento, data_despesa) usada na
+  // listagem de despesas (despesaController.listar) e nos alertas do
+  // Dashboard - uma despesa lancada num mes com vencimento no mes
+  // seguinte precisa contar no periodo do vencimento, nao no do
+  // lancamento.
+  const [vendas, [{ total: totalDespesasPagasRaw }], [{ total: totalDespesasEmAbertoRaw }]] = await Promise.all([
     prisma.pedido.aggregate({
       where: { status: { in: STATUS_VENDA_CONFIRMADA }, dataPedido: { gte: dataDe, lt: dataAteExclusiva } },
       _sum: { valorTotal: true },
     }),
-    prisma.despesaGeral.aggregate({
-      where: { dataDespesa: { gte: dataDe, lt: dataAteExclusiva }, pago: true },
-      _sum: { valor: true },
-    }),
-    prisma.despesaGeral.aggregate({
-      where: { dataDespesa: { gte: dataDe, lt: dataAteExclusiva }, pago: false },
-      _sum: { valor: true },
-    }),
+    prisma.$queryRaw`
+      SELECT COALESCE(SUM(valor), 0)::numeric(12,2) AS total
+      FROM despesas_gerais
+      WHERE COALESCE(data_vencimento, data_despesa) >= ${dataDe} AND COALESCE(data_vencimento, data_despesa) < ${dataAteExclusiva}
+        AND pago = true
+    `,
+    prisma.$queryRaw`
+      SELECT COALESCE(SUM(valor), 0)::numeric(12,2) AS total
+      FROM despesas_gerais
+      WHERE COALESCE(data_vencimento, data_despesa) >= ${dataDe} AND COALESCE(data_vencimento, data_despesa) < ${dataAteExclusiva}
+        AND pago = false
+    `,
   ]);
 
   const totalVendas = vendas._sum.valorTotal || new Prisma.Decimal(0);
-  const totalDespesasPagas = despesasPagas._sum.valor || new Prisma.Decimal(0);
-  const totalDespesasEmAberto = despesasEmAberto._sum.valor || new Prisma.Decimal(0);
+  const totalDespesasPagas = new Prisma.Decimal(totalDespesasPagasRaw);
+  const totalDespesasEmAberto = new Prisma.Decimal(totalDespesasEmAbertoRaw);
   const lucro = totalVendas.minus(totalDespesasPagas);
   const margemLucro = totalVendas.isZero() ? new Prisma.Decimal(0) : lucro.dividedBy(totalVendas);
 
