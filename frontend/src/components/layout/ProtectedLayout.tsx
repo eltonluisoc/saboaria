@@ -9,6 +9,7 @@ const links = [
   { to: "/admin/insumos", label: "Insumos" },
   { to: "/admin/produtos", label: "Produtos" },
   { to: "/admin/despesas", label: "Despesas" },
+  { to: "/admin/pro-labore", label: "Pró-labore" },
   { to: "/admin/pedidos", label: "Pedidos" },
   { to: "/admin/lotes", label: "Lotes de Produção" },
 ];

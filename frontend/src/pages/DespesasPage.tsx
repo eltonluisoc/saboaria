@@ -195,6 +195,16 @@ export function DespesasPage() {
                     </Link>
                   );
                 }
+                if (row.proLaboreId !== null) {
+                  return (
+                    <Link
+                      to="/admin/pro-labore"
+                      className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-200"
+                    >
+                      Pró-labore
+                    </Link>
+                  );
+                }
                 if (row.despesaOrigemId !== null) {
                   return (
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -225,6 +235,8 @@ export function DespesasPage() {
               render: (row) =>
                 row.compraInsumoId !== null ? (
                   <span className="text-sm text-slate-400">Editar em Insumos</span>
+                ) : row.proLaboreId !== null ? (
+                  <span className="text-sm text-slate-400">Editar em Pró-labore</span>
                 ) : (
                   <div className="flex gap-3">
                     <button

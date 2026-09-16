@@ -2,6 +2,7 @@ const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const { parsePeriodo } = require("../utils/periodo");
 const { gerarDespesasRecorrentesPendentes } = require("../services/despesaService");
+const { gerarParcelasPendentes: gerarParcelasProLaborePendentes } = require("../services/proLaboreService");
 
 // Um pedido que avancou no fluxo (pago -> enviado -> concluido) continua
 // sendo uma venda de verdade - so "pendente" (ainda nao pago) e "cancelado"
@@ -16,13 +17,23 @@ async function vendasDespesas(req, res) {
   }
 
   await gerarDespesasRecorrentesPendentes();
+  await gerarParcelasProLaborePendentes();
 
   // Mesma logica de COALESCE(data_vencimento, data_despesa) usada na
   // listagem de despesas (despesaController.listar) e nos alertas do
   // Dashboard - uma despesa lancada num mes com vencimento no mes
   // seguinte precisa contar no periodo do vencimento, nao no do
-  // lancamento.
-  const [vendas, [{ total: totalDespesasPagasRaw }], [{ total: totalDespesasEmAbertoRaw }]] = await Promise.all([
+  // lancamento. Pro-labore fica de fora dessas duas somas e ganha as
+  // suas proprias (totalProLabore*) - e remuneracao do dono, nao custo
+  // operacional, entao aparece separado no Dashboard (mas ainda entra no
+  // calculo de lucro normalmente, igual qualquer despesa paga).
+  const [
+    vendas,
+    [{ total: totalDespesasPagasRaw }],
+    [{ total: totalDespesasEmAbertoRaw }],
+    [{ total: totalProLaborePagoRaw }],
+    [{ total: totalProLaboreEmAbertoRaw }],
+  ] = await Promise.all([
     prisma.pedido.aggregate({
       where: { status: { in: STATUS_VENDA_CONFIRMADA }, dataPedido: { gte: dataDe, lt: dataAteExclusiva } },
       _sum: { valorTotal: true },
@@ -31,20 +42,34 @@ async function vendasDespesas(req, res) {
       SELECT COALESCE(SUM(valor), 0)::numeric(12,2) AS total
       FROM despesas_gerais
       WHERE COALESCE(data_vencimento, data_despesa) >= ${dataDe} AND COALESCE(data_vencimento, data_despesa) < ${dataAteExclusiva}
-        AND pago = true
+        AND pago = true AND categoria IS DISTINCT FROM 'Pró-labore'
     `,
     prisma.$queryRaw`
       SELECT COALESCE(SUM(valor), 0)::numeric(12,2) AS total
       FROM despesas_gerais
       WHERE COALESCE(data_vencimento, data_despesa) >= ${dataDe} AND COALESCE(data_vencimento, data_despesa) < ${dataAteExclusiva}
-        AND pago = false
+        AND pago = false AND categoria IS DISTINCT FROM 'Pró-labore'
+    `,
+    prisma.$queryRaw`
+      SELECT COALESCE(SUM(valor), 0)::numeric(12,2) AS total
+      FROM despesas_gerais
+      WHERE COALESCE(data_vencimento, data_despesa) >= ${dataDe} AND COALESCE(data_vencimento, data_despesa) < ${dataAteExclusiva}
+        AND pago = true AND categoria = 'Pró-labore'
+    `,
+    prisma.$queryRaw`
+      SELECT COALESCE(SUM(valor), 0)::numeric(12,2) AS total
+      FROM despesas_gerais
+      WHERE COALESCE(data_vencimento, data_despesa) >= ${dataDe} AND COALESCE(data_vencimento, data_despesa) < ${dataAteExclusiva}
+        AND pago = false AND categoria = 'Pró-labore'
     `,
   ]);
 
   const totalVendas = vendas._sum.valorTotal || new Prisma.Decimal(0);
   const totalDespesasPagas = new Prisma.Decimal(totalDespesasPagasRaw);
   const totalDespesasEmAberto = new Prisma.Decimal(totalDespesasEmAbertoRaw);
-  const lucro = totalVendas.minus(totalDespesasPagas);
+  const totalProLaborePago = new Prisma.Decimal(totalProLaborePagoRaw);
+  const totalProLaboreEmAberto = new Prisma.Decimal(totalProLaboreEmAbertoRaw);
+  const lucro = totalVendas.minus(totalDespesasPagas).minus(totalProLaborePago);
   const margemLucro = totalVendas.isZero() ? new Prisma.Decimal(0) : lucro.dividedBy(totalVendas);
 
   return res.json({
@@ -52,6 +77,8 @@ async function vendasDespesas(req, res) {
     totalVendas,
     totalDespesasPagas,
     totalDespesasEmAberto,
+    totalProLaborePago,
+    totalProLaboreEmAberto,
     lucro,
     margemLucro,
   });

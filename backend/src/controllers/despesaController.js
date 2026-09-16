@@ -5,6 +5,7 @@ const {
   gerarDespesasRecorrentesPendentes,
   sincronizarOcorrenciasFuturasDaOrigem,
 } = require("../services/despesaService");
+const { gerarParcelasPendentes: gerarParcelasProLaborePendentes } = require("../services/proLaboreService");
 
 function parseId(param) {
   const id = Number(param);
@@ -13,6 +14,9 @@ function parseId(param) {
 
 const ERRO_DESPESA_DE_COMPRA =
   "Essa despesa foi gerada automaticamente por uma compra de insumo - edite ou remova a compra na tela de Insumos.";
+
+const ERRO_DESPESA_DE_PRO_LABORE =
+  "Essa despesa foi gerada automaticamente pelo Pró-labore - altere o valor em Pró-labore.";
 
 function validarDespesaBody(body, { partial = false } = {}) {
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = body || {};
@@ -99,6 +103,7 @@ async function listar(req, res) {
   }
 
   await gerarDespesasRecorrentesPendentes();
+  await gerarParcelasProLaborePendentes();
 
   // A data que importa pra listar/filtrar/ordenar despesas e o vencimento,
   // quando ele existe - senao, a data da despesa. Antes o filtro e a
@@ -120,6 +125,7 @@ async function listar(req, res) {
       d.data_vencimento AS "dataVencimento",
       d.data_despesa AS "dataDespesa",
       d.compra_insumo_id AS "compraInsumoId",
+      d.pro_labore_id AS "proLaboreId",
       d.created_at AS "createdAt",
       ci.insumo_id AS "compraInsumoInsumoId"
     FROM despesas_gerais d
@@ -170,6 +176,9 @@ async function editar(req, res) {
   }
   if (despesaAntes.compraInsumoId !== null) {
     return res.status(409).json({ error: ERRO_DESPESA_DE_COMPRA });
+  }
+  if (despesaAntes.proLaboreId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_DE_PRO_LABORE });
   }
 
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
@@ -224,6 +233,9 @@ async function remover(req, res) {
   }
   if (despesa.compraInsumoId !== null) {
     return res.status(409).json({ error: ERRO_DESPESA_DE_COMPRA });
+  }
+  if (despesa.proLaboreId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_DE_PRO_LABORE });
   }
 
   const ehOrigemComCopias =

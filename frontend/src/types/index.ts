@@ -66,6 +66,7 @@ export interface DespesaGeral {
   dataDespesa: string;
   compraInsumoId: number | null;
   compraInsumo?: { insumoId: number } | null;
+  proLaboreId: number | null;
   createdAt: string;
 }
 
@@ -137,6 +138,8 @@ export interface Relatorio {
   totalVendas: string;
   totalDespesasPagas: string;
   totalDespesasEmAberto: string;
+  totalProLaborePago: string;
+  totalProLaboreEmAberto: string;
   lucro: string;
   margemLucro: string;
 }

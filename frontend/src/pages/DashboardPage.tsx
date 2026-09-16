@@ -94,10 +94,17 @@ export function DashboardPage() {
           />
         )}
         {desdeOInicio.data && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Card title="Total vendido" value={formatMoeda(desdeOInicio.data.totalVendas)} tone="emerald" />
             <Card title="Despesas pagas" value={formatMoeda(desdeOInicio.data.totalDespesasPagas)} tone="red" />
             <Card title="Despesas em aberto" value={formatMoeda(desdeOInicio.data.totalDespesasEmAberto)} tone="amber" />
+            <Card
+              title="Pró-labore"
+              value={formatMoeda(
+                (Number(desdeOInicio.data.totalProLaborePago) + Number(desdeOInicio.data.totalProLaboreEmAberto)).toFixed(2)
+              )}
+              tone="slate"
+            />
             <Card
               title="Lucro acumulado"
               value={formatMoeda(desdeOInicio.data.lucro)}
@@ -153,10 +160,17 @@ export function DashboardPage() {
           <ErrorBanner message={periodo.error instanceof ApiError ? periodo.error.message : "Erro ao carregar relatorio"} />
         )}
         {periodo.data && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
             <Card title="Vendas" value={formatMoeda(periodo.data.totalVendas)} tone="emerald" />
             <Card title="Despesas pagas" value={formatMoeda(periodo.data.totalDespesasPagas)} tone="red" />
             <Card title="Despesas em aberto" value={formatMoeda(periodo.data.totalDespesasEmAberto)} tone="amber" />
+            <Card
+              title="Pró-labore"
+              value={formatMoeda(
+                (Number(periodo.data.totalProLaborePago) + Number(periodo.data.totalProLaboreEmAberto)).toFixed(2)
+              )}
+              tone="slate"
+            />
             <Card
               title="Lucro"
               value={formatMoeda(periodo.data.lucro)}
@@ -231,8 +245,23 @@ export function DashboardPage() {
   );
 }
 
-function Card({ title, value, tone }: { title: string; value: string; tone: "emerald" | "red" | "amber" }) {
-  const toneClass = tone === "emerald" ? "text-emerald-700" : tone === "amber" ? "text-amber-700" : "text-red-700";
+function Card({
+  title,
+  value,
+  tone,
+}: {
+  title: string;
+  value: string;
+  tone: "emerald" | "red" | "amber" | "slate";
+}) {
+  const toneClass =
+    tone === "emerald"
+      ? "text-emerald-700"
+      : tone === "amber"
+        ? "text-amber-700"
+        : tone === "slate"
+          ? "text-slate-700"
+          : "text-red-700";
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm text-slate-500">{title}</p>

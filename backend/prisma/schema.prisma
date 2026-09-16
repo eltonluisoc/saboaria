@@ -105,13 +105,35 @@ model DespesaGeral {
   dataVencimento     DateTime? @map("data_vencimento")
   dataDespesa        DateTime  @map("data_despesa")
   compraInsumoId     Int?      @unique @map("compra_insumo_id")
+  proLaboreId        Int?      @map("pro_labore_id")
   createdAt          DateTime  @default(now()) @map("created_at")
 
   despesaOrigem   DespesaGeral?  @relation("DespesaRecorrencia", fields: [despesaOrigemId], references: [id], onDelete: SetNull)
   despesasGeradas DespesaGeral[] @relation("DespesaRecorrencia")
   compraInsumo    CompraInsumo?  @relation(fields: [compraInsumoId], references: [id], onDelete: SetNull)
+  proLabore       ProLabore?     @relation(fields: [proLaboreId], references: [id], onDelete: SetNull)
 
   @@map("despesas_gerais")
+}
+
+// Configuracao unica de pro-labore (o app garante que so existe uma linha
+// "ativa" - sem constraint de banco pra isso, mantido simples de proposito).
+// As parcelas mensais de verdade sao DespesaGeral normais, ligadas aqui por
+// proLaboreId - aparecem em Despesas e no Dashboard como qualquer despesa,
+// so ganham uma trava de edicao direta (igual compra de insumo) e uma regra
+// de atualizacao de valor propria (a partir do mes que vem, nao "a partir de
+// hoje" como a recorrencia generica usa).
+model ProLabore {
+  id           Int      @id @default(autoincrement())
+  valor        Decimal  @db.Decimal(12, 2)
+  diaPagamento Int      @map("dia_pagamento")
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  despesas DespesaGeral[]
+
+  @@map("pro_labore")
 }
 
 model Cliente {
