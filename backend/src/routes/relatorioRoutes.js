@@ -8,6 +8,7 @@ router.use(authMiddleware);
 
 router.get("/", relatorioController.vendasDespesas);
 router.get("/produtos-mais-vendidos", relatorioController.produtosMaisVendidos);
+router.get("/media-vendas", relatorioController.mediaVendas);
 router.get("/alertas", relatorioController.alertas);
 
 module.exports = router;

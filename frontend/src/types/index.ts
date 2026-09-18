@@ -144,6 +144,27 @@ export interface Relatorio {
   margemLucro: string;
 }
 
+export interface MediaVendasPeriodo {
+  inicio: string;
+  fim: string;
+  emAndamento: boolean;
+  dias: number;
+  totalValor: number;
+  totalUnidades: number;
+  mediaValorPorDia: number;
+  mediaUnidadesPorDia: number;
+}
+
+export interface MediaVendas {
+  primeiraVenda: string | null;
+  dias: number;
+  totalValor: number;
+  totalUnidades: number;
+  mediaValorPorDia: number;
+  mediaUnidadesPorDia: number;
+  historico: MediaVendasPeriodo[];
+}
+
 export interface ProdutoMaisVendido {
   produtoId: number;
   nome: string;

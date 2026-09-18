@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { Alertas, ProdutoMaisVendido, Relatorio } from "../types";
+import type { Alertas, MediaVendas, ProdutoMaisVendido, Relatorio } from "../types";
 
 export function useRelatorio(de: string, ate: string) {
   return useQuery({
@@ -15,6 +15,13 @@ export function useProdutosMaisVendidos(de: string, ate: string) {
     queryKey: ["relatorio", "produtos-mais-vendidos", de, ate],
     queryFn: () => api.get<ProdutoMaisVendido[]>(`/api/admin/relatorio/produtos-mais-vendidos?de=${de}&ate=${ate}`),
     enabled: Boolean(de && ate),
+  });
+}
+
+export function useMediaVendas(granularidade: "quinzenal" | "mensal") {
+  return useQuery({
+    queryKey: ["relatorio", "media-vendas", granularidade],
+    queryFn: () => api.get<MediaVendas>(`/api/admin/relatorio/media-vendas?granularidade=${granularidade}`),
   });
 }
 

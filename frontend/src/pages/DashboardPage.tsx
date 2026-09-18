@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAlertas, useProdutosMaisVendidos, useRelatorio } from "../hooks/useRelatorio";
+import { useAlertas, useMediaVendas, useProdutosMaisVendidos, useRelatorio } from "../hooks/useRelatorio";
 import { Input } from "../components/ui/Input";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
 import { ApiError } from "../lib/api";
@@ -40,6 +40,16 @@ function formatMoeda(valor: string) {
   return Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function formatNumero2(valor: number) {
+  return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// "2026-08-16" -> "16/08/2026" (sem passar por Date, pra nao mudar de dia por fuso)
+function formatDiaISO(iso: string) {
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
 function formatData(valor: string) {
   return new Date(valor).toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
@@ -48,11 +58,13 @@ export function DashboardPage() {
   const [periodoAtivo, setPeriodoAtivo] = useState<PeriodoRapido>("12m");
   const [de, setDe] = useState(ultimos12Meses());
   const [ate, setAte] = useState(hoje());
+  const [granularidadeMedia, setGranularidadeMedia] = useState<"quinzenal" | "mensal">("quinzenal");
 
   const desdeOInicio = useRelatorio(DESDE_O_INICIO_DE, hoje());
   const periodo = useRelatorio(de, ate);
   const produtosMaisVendidos = useProdutosMaisVendidos(de, ate);
   const alertas = useAlertas();
+  const mediaVendas = useMediaVendas(granularidadeMedia);
 
   function selecionarPeriodoRapido(opcao: PeriodoRapido) {
     setPeriodoAtivo(opcao);
@@ -111,6 +123,94 @@ export function DashboardPage() {
               tone={Number(desdeOInicio.data.lucro) >= 0 ? "emerald" : "red"}
             />
           </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Média de vendas por dia
+          </h2>
+          <div className="flex gap-2">
+            {(
+              [
+                { key: "quinzenal", label: "Quinzenal" },
+                { key: "mensal", label: "Mensal" },
+              ] as { key: "quinzenal" | "mensal"; label: string }[]
+            ).map((opcao) => (
+              <button
+                key={opcao.key}
+                onClick={() => setGranularidadeMedia(opcao.key)}
+                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                  granularidadeMedia === opcao.key
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                    : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {opcao.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {mediaVendas.isLoading && <Spinner />}
+        {mediaVendas.error && (
+          <ErrorBanner
+            message={mediaVendas.error instanceof ApiError ? mediaVendas.error.message : "Erro ao carregar média de vendas"}
+          />
+        )}
+        {mediaVendas.data && mediaVendas.data.primeiraVenda === null && (
+          <p className="text-sm text-slate-500">Ainda não há vendas confirmadas pra calcular a média.</p>
+        )}
+        {mediaVendas.data && mediaVendas.data.primeiraVenda !== null && (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Card
+                title="Média atual em R$ por dia"
+                value={formatMoeda(String(mediaVendas.data.mediaValorPorDia))}
+                subtitle={`${formatMoeda(String(mediaVendas.data.totalValor))} em ${mediaVendas.data.dias} dias · desde ${formatDiaISO(mediaVendas.data.primeiraVenda)}`}
+                tone="emerald"
+              />
+              <Card
+                title="Média atual em produtos por dia"
+                value={`${formatNumero2(mediaVendas.data.mediaUnidadesPorDia)} un.`}
+                subtitle={`${mediaVendas.data.totalUnidades} unidades em ${mediaVendas.data.dias} dias · desde ${formatDiaISO(mediaVendas.data.primeiraVenda)}`}
+                tone="emerald"
+              />
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table className="w-full min-w-max text-sm">
+                <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-4 py-2">Período</th>
+                    <th className="px-4 py-2">Dias</th>
+                    <th className="px-4 py-2">Vendido</th>
+                    <th className="px-4 py-2">Média R$/dia</th>
+                    <th className="px-4 py-2">Unidades</th>
+                    <th className="px-4 py-2">Média un./dia</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {[...mediaVendas.data.historico].reverse().map((h) => (
+                    <tr key={h.inicio}>
+                      <td className="px-4 py-2 font-medium text-slate-700">
+                        {formatDiaISO(h.inicio)} – {formatDiaISO(h.fim)}
+                        {h.emAndamento && (
+                          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                            em andamento
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">{h.dias}</td>
+                      <td className="px-4 py-2 text-slate-600">{formatMoeda(String(h.totalValor))}</td>
+                      <td className="px-4 py-2 font-medium text-slate-700">{formatMoeda(String(h.mediaValorPorDia))}</td>
+                      <td className="px-4 py-2 text-slate-600">{h.totalUnidades}</td>
+                      <td className="px-4 py-2 font-medium text-slate-700">{formatNumero2(h.mediaUnidadesPorDia)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 
@@ -249,10 +349,12 @@ function Card({
   title,
   value,
   tone,
+  subtitle,
 }: {
   title: string;
   value: string;
   tone: "emerald" | "red" | "amber" | "slate";
+  subtitle?: string;
 }) {
   const toneClass =
     tone === "emerald"
@@ -266,6 +368,7 @@ function Card({
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm text-slate-500">{title}</p>
       <p className={`mt-1 text-2xl font-semibold ${toneClass}`}>{value}</p>
+      {subtitle && <p className="mt-1 text-xs text-slate-400">{subtitle}</p>}
     </div>
   );
 }
