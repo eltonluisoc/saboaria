@@ -18,32 +18,182 @@ import { ApiError } from "../lib/api";
 import type { DespesaGeral } from "../types";
 
 type StatusFiltro = "todas" | "abertas" | "pagas";
+type PeriodoPreset = "proximos30" | "mes" | "proximos3meses" | "ano" | "tudo";
+
+const DIA_MS = 24 * 60 * 60 * 1000;
+
+const PRESETS: { key: PeriodoPreset; label: string }[] = [
+  { key: "proximos30", label: "Próximos 30 dias" },
+  { key: "mes", label: "Este mês" },
+  { key: "proximos3meses", label: "Próximos 3 meses" },
+  { key: "ano", label: "Ano" },
+  { key: "tudo", label: "Tudo" },
+];
+
+function inicioDoDiaUTC(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function dataEfetiva(d: DespesaGeral) {
+  return new Date(d.dataVencimento ?? d.dataDespesa);
+}
+
+// Janela de cada chip - todo preset exceto "tudo" tambem inclui qualquer
+// despesa nao paga com data efetiva anterior a hoje ("vencida em aberto"),
+// nao importa a idade, pra nada pendente sumir da tela so por estar
+// atrasado (mesmo conceito de relatorioController.alertas/despesasVencidas).
+function calcularJanelaPreset(preset: PeriodoPreset, hoje: Date): { inicio: Date; fim: Date } | null {
+  if (preset === "tudo") return null;
+  if (preset === "mes") {
+    return {
+      inicio: new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1)),
+      fim: new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 0)),
+    };
+  }
+  if (preset === "ano") {
+    return {
+      inicio: new Date(Date.UTC(hoje.getUTCFullYear(), 0, 1)),
+      fim: new Date(Date.UTC(hoje.getUTCFullYear(), 11, 31)),
+    };
+  }
+  const dias = preset === "proximos3meses" ? 90 : 30;
+  return { inicio: hoje, fim: new Date(hoje.getTime() + dias * DIA_MS) };
+}
+
+function aplicarPreset(despesas: DespesaGeral[], preset: PeriodoPreset): DespesaGeral[] {
+  const hoje = inicioDoDiaUTC(new Date());
+  const janela = calcularJanelaPreset(preset, hoje);
+  if (janela === null) return despesas;
+  return despesas.filter((d) => {
+    const efetiva = dataEfetiva(d);
+    const dentroDaJanela = efetiva >= janela.inicio && efetiva <= janela.fim;
+    const vencidaEmAberto = !d.pago && efetiva < hoje;
+    return dentroDaJanela || vencidaEmAberto;
+  });
+}
+
+type LinhaExibicao =
+  | { tipo: "despesa"; despesa: DespesaGeral }
+  | {
+      tipo: "grupo";
+      chave: string;
+      origemBadge: "recorrencia" | "prolabore" | "parcelada";
+      descricaoBase: string;
+      categoria: string | null;
+      formaPagamento: string | null;
+      quantidade: number;
+      total: number;
+      dataAte: string;
+      itens: DespesaGeral[];
+    };
+
+function chaveOrigem(d: DespesaGeral): string | null {
+  if (d.despesaOrigemId !== null) return `recorrencia-${d.despesaOrigemId}`;
+  if (d.proLaboreId !== null) return `prolabore-${d.proLaboreId}`;
+  if (d.compraParceladaId !== null) return `parcelada-${d.compraParceladaId}`;
+  return null;
+}
+
+// Junta despesas nao pagas da mesma serie (recorrencia/pro-labore/compra
+// parcelada) numa linha-resumo quando ha mais de 2 ocorrencias no recorte
+// atual - evita repetir 10+ linhas iguais so pra planejamento. Pagas nunca
+// agrupam, ficam sempre soltas (preserva o historico).
+function agruparParaExibicao(despesas: DespesaGeral[]): LinhaExibicao[] {
+  const grupos = new Map<string, DespesaGeral[]>();
+  const soltas: DespesaGeral[] = [];
+
+  for (const d of despesas) {
+    const chave = chaveOrigem(d);
+    if (chave === null || d.pago) {
+      soltas.push(d);
+      continue;
+    }
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave)!.push(d);
+  }
+
+  const linhas: LinhaExibicao[] = soltas.map((d) => ({ tipo: "despesa" as const, despesa: d }));
+
+  for (const [chave, itens] of grupos) {
+    if (itens.length <= 2) {
+      linhas.push(...itens.map((d) => ({ tipo: "despesa" as const, despesa: d })));
+      continue;
+    }
+    itens.sort((a, b) => dataEfetiva(a).getTime() - dataEfetiva(b).getTime());
+    linhas.push({
+      tipo: "grupo",
+      chave,
+      origemBadge: chave.split("-")[0] as "recorrencia" | "prolabore" | "parcelada",
+      descricaoBase: itens[0].descricao.replace(/\s*\(\d+\/\d+\)$/, ""),
+      categoria: itens[0].categoria,
+      formaPagamento: itens[0].formaPagamento,
+      quantidade: itens.length,
+      total: itens.reduce((soma, d) => soma + Number(d.valor), 0),
+      dataAte: (itens[itens.length - 1].dataVencimento ?? itens[itens.length - 1].dataDespesa) as string,
+      itens,
+    });
+  }
+
+  linhas.sort((a, b) => {
+    const dataA = a.tipo === "grupo" ? dataEfetiva(a.itens[0]) : dataEfetiva(a.despesa);
+    const dataB = b.tipo === "grupo" ? dataEfetiva(b.itens[0]) : dataEfetiva(b.despesa);
+    return dataA.getTime() - dataB.getTime();
+  });
+
+  return linhas;
+}
 
 export function DespesasPage() {
-  // Sem filtro de data por padrao - mostra tudo, pra bater com os totais do
-  // Dashboard e nao confundir (um recorte por data so aqui dava a impressao
-  // de numero errado quando comparado com o Dashboard, que nao tem esse
-  // recorte). Quem quiser um periodo especifico aplica o filtro manualmente.
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>("proximos30");
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todas");
-  const { data: despesas, isLoading, error } = useDespesas(de && ate ? { de, ate } : undefined);
+  const [gruposExpandidos, setGruposExpandidos] = useState<Set<string>>(new Set());
+  const filtroManualAtivo = Boolean(de && ate);
+  const { data: despesas, isLoading, error } = useDespesas(filtroManualAtivo ? { de, ate } : undefined);
   const [modalDespesa, setModalDespesa] = useState<DespesaGeral | null | undefined>(undefined);
   const remover = useRemoverDespesa();
   const marcarPaga = useMarcarDespesaPaga();
   const marcarEmAberto = useMarcarDespesaEmAberto();
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Os totais do topo somam TODAS as despesas do array carregado (sem
+  // preset de periodo aplicado) - sem filtro manual, "despesas" vem inteiro
+  // do servidor e os totais batem com o Dashboard; com filtro manual de
+  // data, "despesas" ja vem recortado pelo servidor (comportamento existente
+  // preservado). O preset de periodo (chips) so afeta o que e EXIBIDO na
+  // tabela abaixo, nunca esses totais.
   const totalAberto = despesas?.filter((d) => !d.pago).reduce((soma, d) => soma + Number(d.valor), 0) ?? 0;
   const totalPago = despesas?.filter((d) => d.pago).reduce((soma, d) => soma + Number(d.valor), 0) ?? 0;
   const countAberto = despesas?.filter((d) => !d.pago).length ?? 0;
   const countPago = despesas?.filter((d) => d.pago).length ?? 0;
 
-  const despesasFiltradas = despesas?.filter((d) => {
+  const despesasNoPeriodo = filtroManualAtivo ? (despesas ?? []) : aplicarPreset(despesas ?? [], periodoPreset);
+
+  const despesasFiltradas = despesasNoPeriodo.filter((d) => {
     if (statusFiltro === "pagas") return d.pago;
     if (statusFiltro === "abertas") return !d.pago;
     return true;
   });
+
+  const linhasAgrupadas = agruparParaExibicao(despesasFiltradas);
+  const linhasExibidas = linhasAgrupadas.flatMap((linha) => {
+    if (linha.tipo === "despesa") return [linha];
+    if (!gruposExpandidos.has(linha.chave)) return [linha];
+    return [linha, ...linha.itens.map((d) => ({ tipo: "despesa" as const, despesa: d }))];
+  });
+
+  function alternarGrupo(chave: string) {
+    setGruposExpandidos((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(chave)) {
+        novo.delete(chave);
+      } else {
+        novo.add(chave);
+      }
+      return novo;
+    });
+  }
 
   async function handleRemover(despesa: DespesaGeral) {
     const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null;
@@ -94,12 +244,31 @@ export function DespesasPage() {
             onClick={() => {
               setDe("");
               setAte("");
+              setPeriodoPreset("proximos30");
             }}
           >
             Limpar filtro
           </Button>
         )}
       </div>
+
+      {!filtroManualAtivo && (
+        <div className="flex flex-wrap gap-2">
+          {PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              onClick={() => setPeriodoPreset(preset.key)}
+              className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                periodoPreset === preset.key
+                  ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                  : "border-slate-300 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -125,7 +294,12 @@ export function DespesasPage() {
         </div>
 
         {despesas && (
-          <div className="flex flex-wrap gap-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            {!filtroManualAtivo && periodoPreset !== "tudo" && (
+              <span className="text-slate-500">
+                Mostrando {despesasFiltradas.length} de {despesas.length} despesas
+              </span>
+            )}
             <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-700">
               {countAberto} em aberto · R$ {totalAberto.toFixed(2)}
             </span>
@@ -140,9 +314,9 @@ export function DespesasPage() {
       {isLoading && <Spinner />}
       {error && <ErrorBanner message="Erro ao carregar despesas" />}
 
-      {despesasFiltradas && (
+      {despesas && (
         <Table
-          rows={despesasFiltradas}
+          rows={linhasExibidas}
           emptyMessage={
             statusFiltro === "pagas"
               ? "Nenhuma despesa paga nesse período."
@@ -150,16 +324,47 @@ export function DespesasPage() {
                 ? "Nenhuma despesa em aberto nesse período."
                 : "Nenhuma despesa nesse período."
           }
-          keyField={(row) => row.id}
+          keyField={(linha) => (linha.tipo === "grupo" ? `grupo-${linha.chave}` : linha.despesa.id)}
           columns={[
-            { header: "Descrição", render: (row) => row.descricao },
-            { header: "Categoria", render: (row) => row.categoria ?? "—" },
-            { header: "Valor", render: (row) => `R$ ${Number(row.valor).toFixed(2)}` },
+            {
+              header: "Descrição",
+              render: (linha) => {
+                if (linha.tipo === "despesa") return linha.despesa.descricao;
+                const expandido = gruposExpandidos.has(linha.chave);
+                return (
+                  <button
+                    className="text-left font-medium text-slate-700 hover:underline"
+                    onClick={() => alternarGrupo(linha.chave)}
+                  >
+                    {expandido ? "▾" : "▸"} {linha.descricaoBase}
+                    <span className="ml-1 text-xs font-normal text-slate-400">
+                      ({linha.quantidade} parcelas futuras)
+                    </span>
+                  </button>
+                );
+              },
+            },
+            {
+              header: "Categoria",
+              render: (linha) => (linha.tipo === "grupo" ? (linha.categoria ?? "—") : (linha.despesa.categoria ?? "—")),
+            },
+            {
+              header: "Valor",
+              render: (linha) =>
+                linha.tipo === "grupo"
+                  ? `R$ ${linha.total.toFixed(2)} (total)`
+                  : `R$ ${Number(linha.despesa.valor).toFixed(2)}`,
+            },
             {
               header: "Data de pagamento",
-              render: (row) => {
-                const dataEfetiva = row.dataVencimento ?? row.dataDespesa;
-                const formatada = new Date(dataEfetiva).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+              render: (linha) => {
+                if (linha.tipo === "grupo") {
+                  const ateFormatada = new Date(linha.dataAte).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+                  return `até ${ateFormatada}`;
+                }
+                const row = linha.despesa;
+                const efetivaStr = row.dataVencimento ?? row.dataDespesa;
+                const formatada = new Date(efetivaStr).toLocaleDateString("pt-BR", { timeZone: "UTC" });
                 // Quando ha vencimento diferente da data de lancamento, mostra os
                 // dois - a data de pagamento e a que manda (filtro, ordenacao),
                 // mas a data de lancamento continua visivel como referencia.
@@ -177,18 +382,34 @@ export function DespesasPage() {
             },
             {
               header: "Recorrente",
-              render: (row) =>
-                row.recorrente ? (
+              render: (linha) => {
+                if (linha.tipo === "grupo") return "—";
+                return linha.despesa.recorrente ? (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                     Sim
                   </span>
                 ) : (
                   "Não"
-                ),
+                );
+              },
             },
             {
               header: "Origem",
-              render: (row) => {
+              render: (linha) => {
+                if (linha.tipo === "grupo") {
+                  const label =
+                    linha.origemBadge === "prolabore"
+                      ? "Pró-labore"
+                      : linha.origemBadge === "parcelada"
+                        ? "Compra parcelada"
+                        : "Gerada automaticamente";
+                  return (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      {label}
+                    </span>
+                  );
+                }
+                const row = linha.despesa;
                 if (row.compraInsumo) {
                   return (
                     <Link
@@ -226,11 +447,22 @@ export function DespesasPage() {
                 return "—";
               },
             },
-            { header: "Forma de pagamento", render: (row) => row.formaPagamento ?? "—" },
+            {
+              header: "Forma de pagamento",
+              render: (linha) => (linha.tipo === "grupo" ? (linha.formaPagamento ?? "—") : (linha.despesa.formaPagamento ?? "—")),
+            },
             {
               header: "Status",
-              render: (row) =>
-                row.pago ? (
+              render: (linha) => {
+                if (linha.tipo === "grupo") {
+                  return (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      {linha.quantidade} em aberto
+                    </span>
+                  );
+                }
+                const row = linha.despesa;
+                return row.pago ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
                     Paga
                     {row.dataPagamento &&
@@ -240,11 +472,24 @@ export function DespesasPage() {
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                     Em aberto
                   </span>
-                ),
+                );
+              },
             },
             {
               header: "Ações",
-              render: (row) => {
+              render: (linha) => {
+                if (linha.tipo === "grupo") {
+                  const expandido = gruposExpandidos.has(linha.chave);
+                  return (
+                    <button
+                      className="text-sm text-slate-600 hover:underline"
+                      onClick={() => alternarGrupo(linha.chave)}
+                    >
+                      {expandido ? "Recolher" : "Ver parcelas"}
+                    </button>
+                  );
+                }
+                const row = linha.despesa;
                 const editarLabel =
                   row.compraInsumoId !== null
                     ? "Editar em Insumos"
