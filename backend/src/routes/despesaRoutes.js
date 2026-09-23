@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.post("/", despesaController.criar);
+router.post("/parceladas", despesaController.criarParcelada);
 router.get("/", despesaController.listar);
 router.get("/:id", despesaController.detalhe);
 router.put("/:id", despesaController.editar);

@@ -23,6 +23,16 @@ export interface DespesaInput {
   recorrente?: boolean;
   dataFimRecorrencia?: string | null;
   dataVencimento?: string | null;
+  formaPagamento?: string | null;
+}
+
+export interface DespesaParceladaInput {
+  descricao: string;
+  valorTotal: number;
+  categoria?: string | null;
+  dataDespesa: string;
+  formaPagamento?: string | null;
+  totalParcelas: number;
 }
 
 export function useCriarDespesa() {
@@ -30,6 +40,17 @@ export function useCriarDespesa() {
   return useMutation({
     mutationFn: (data: DespesaInput) => api.post<DespesaGeral>("/api/admin/despesas", data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["despesas"] }),
+  });
+}
+
+export function useCriarDespesaParcelada() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: DespesaParceladaInput) => api.post("/api/admin/despesas/parceladas", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["despesas"] });
+      qc.invalidateQueries({ queryKey: ["relatorio"] });
+    },
   });
 }
 

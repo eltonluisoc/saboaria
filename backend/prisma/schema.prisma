@@ -106,14 +106,39 @@ model DespesaGeral {
   dataDespesa        DateTime  @map("data_despesa")
   compraInsumoId     Int?      @unique @map("compra_insumo_id")
   proLaboreId        Int?      @map("pro_labore_id")
+  compraParceladaId  Int?      @map("compra_parcelada_id")
+  numeroParcela      Int?      @map("numero_parcela")
+  formaPagamento     String?   @map("forma_pagamento")
   createdAt          DateTime  @default(now()) @map("created_at")
 
-  despesaOrigem   DespesaGeral?  @relation("DespesaRecorrencia", fields: [despesaOrigemId], references: [id], onDelete: SetNull)
-  despesasGeradas DespesaGeral[] @relation("DespesaRecorrencia")
-  compraInsumo    CompraInsumo?  @relation(fields: [compraInsumoId], references: [id], onDelete: SetNull)
-  proLabore       ProLabore?     @relation(fields: [proLaboreId], references: [id], onDelete: SetNull)
+  despesaOrigem   DespesaGeral?    @relation("DespesaRecorrencia", fields: [despesaOrigemId], references: [id], onDelete: SetNull)
+  despesasGeradas DespesaGeral[]   @relation("DespesaRecorrencia")
+  compraInsumo    CompraInsumo?    @relation(fields: [compraInsumoId], references: [id], onDelete: SetNull)
+  proLabore       ProLabore?       @relation(fields: [proLaboreId], references: [id], onDelete: SetNull)
+  compraParcelada CompraParcelada? @relation(fields: [compraParceladaId], references: [id], onDelete: SetNull)
 
   @@map("despesas_gerais")
+}
+
+// Compra parcelada (ex: cartao de credito em N vezes) - mesmo padrao de
+// CompraInsumo/ProLabore: essa tabela guarda so os dados da compra em si,
+// cada parcela de verdade e uma DespesaGeral normal ligada por
+// compraParceladaId (aparece em Despesas/Dashboard como qualquer despesa,
+// so nao pode ser editada solta - so a compra inteira pode ser removida,
+// e so enquanto nenhuma parcela tiver sido paga).
+model CompraParcelada {
+  id             Int      @id @default(autoincrement())
+  descricao      String
+  valorTotal     Decimal  @map("valor_total") @db.Decimal(12, 2)
+  totalParcelas  Int      @map("total_parcelas")
+  formaPagamento String?  @map("forma_pagamento")
+  categoria      String?
+  dataCompra     DateTime @map("data_compra")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  despesas DespesaGeral[]
+
+  @@map("compras_parceladas")
 }
 
 // Configuracao unica de pro-labore (o app garante que so existe uma linha

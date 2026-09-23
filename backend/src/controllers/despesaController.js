@@ -18,8 +18,18 @@ const ERRO_DESPESA_DE_COMPRA =
 const ERRO_DESPESA_DE_PRO_LABORE =
   "Essa despesa foi gerada automaticamente pelo Pró-labore - altere o valor em Pró-labore.";
 
+const ERRO_DESPESA_PARCELADA =
+  "Essa despesa faz parte de uma compra parcelada - pra corrigir, remova a compra inteira (só é possível se nenhuma parcela estiver paga) e cadastre de novo.";
+
+const FORMA_PAGAMENTO_PADRAO_PARCELADA = "Cartão de crédito";
+
+function ultimoDiaDoMes(ano, mes) {
+  return new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate();
+}
+
 function validarDespesaBody(body, { partial = false } = {}) {
-  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = body || {};
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento, formaPagamento } =
+    body || {};
 
   if (!partial || descricao !== undefined) {
     if (typeof descricao !== "string" || !descricao.trim()) {
@@ -66,6 +76,10 @@ function validarDespesaBody(body, { partial = false } = {}) {
     }
   }
 
+  if (formaPagamento !== undefined && formaPagamento !== null && typeof formaPagamento !== "string") {
+    return "Campo 'formaPagamento' deve ser texto";
+  }
+
   return null;
 }
 
@@ -75,11 +89,13 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento, formaPagamento } =
+    req.body;
 
   const despesa = await prisma.despesaGeral.create({
     data: {
       descricao: descricao.trim(),
+      formaPagamento: formaPagamento ? formaPagamento.trim() : null,
       valor,
       categoria: categoria ? categoria.trim() : null,
       dataDespesa: new Date(dataDespesa),
@@ -94,6 +110,86 @@ async function criar(req, res) {
   }
 
   return res.status(201).json(despesa);
+}
+
+// Compra parcelada (ex: cartao de credito em N vezes): cria a "origem"
+// (CompraParcelada, so os dados da compra) e ja gera as N parcelas de uma
+// vez, uma DespesaGeral por mes a partir de dataDespesa - mesmo dia do mes,
+// ajustado quando o mes for mais curto (mesmo helper que despesaService.js/
+// proLaboreService.js ja usam). Valor dividido em centavos inteiros, resto
+// (se houver) todo na ultima parcela - a soma das parcelas sempre bate
+// exatamente com o valor total informado.
+async function criarParcelada(req, res) {
+  const { descricao, valorTotal, categoria, dataDespesa, formaPagamento, totalParcelas } = req.body || {};
+
+  if (typeof descricao !== "string" || !descricao.trim()) {
+    return res.status(400).json({ error: "Campo 'descricao' e obrigatorio" });
+  }
+  const valor = Number(valorTotal);
+  if (!Number.isFinite(valor) || valor <= 0) {
+    return res.status(400).json({ error: "Campo 'valorTotal' deve ser um numero maior que zero" });
+  }
+  if (!dataDespesa || Number.isNaN(Date.parse(dataDespesa))) {
+    return res.status(400).json({ error: "Campo 'dataDespesa' invalido" });
+  }
+  const parcelas = Number(totalParcelas);
+  if (!Number.isInteger(parcelas) || parcelas < 2 || parcelas > 36) {
+    return res.status(400).json({ error: "Campo 'totalParcelas' deve ser um numero inteiro entre 2 e 36" });
+  }
+  if (categoria !== undefined && categoria !== null && typeof categoria !== "string") {
+    return res.status(400).json({ error: "Campo 'categoria' deve ser texto" });
+  }
+  if (formaPagamento !== undefined && formaPagamento !== null && typeof formaPagamento !== "string") {
+    return res.status(400).json({ error: "Campo 'formaPagamento' deve ser texto" });
+  }
+
+  const descricaoLimpa = descricao.trim();
+  const categoriaLimpa = categoria ? categoria.trim() : null;
+  const formaPagamentoFinal = formaPagamento && formaPagamento.trim() ? formaPagamento.trim() : FORMA_PAGAMENTO_PADRAO_PARCELADA;
+  const dataBase = new Date(dataDespesa);
+  const totalCentavos = Math.round(valor * 100);
+  const centavosPorParcela = Math.floor(totalCentavos / parcelas);
+  const restoCentavos = totalCentavos - centavosPorParcela * parcelas;
+
+  const resultado = await prisma.$transaction(async (tx) => {
+    const compra = await tx.compraParcelada.create({
+      data: {
+        descricao: descricaoLimpa,
+        valorTotal: valor,
+        totalParcelas: parcelas,
+        formaPagamento: formaPagamentoFinal,
+        categoria: categoriaLimpa,
+        dataCompra: dataBase,
+      },
+    });
+
+    const despesasCriadas = [];
+    for (let i = 0; i < parcelas; i++) {
+      const centavos = centavosPorParcela + (i === parcelas - 1 ? restoCentavos : 0);
+      const ano = dataBase.getUTCFullYear();
+      const mes = dataBase.getUTCMonth() + i;
+      const dia = Math.min(dataBase.getUTCDate(), ultimoDiaDoMes(ano, mes));
+      const dataParcela = new Date(Date.UTC(ano, mes, dia));
+
+      const despesa = await tx.despesaGeral.create({
+        data: {
+          descricao: `${descricaoLimpa} (${i + 1}/${parcelas})`,
+          valor: centavos / 100,
+          categoria: categoriaLimpa,
+          dataDespesa: dataParcela,
+          formaPagamento: formaPagamentoFinal,
+          pago: false,
+          compraParceladaId: compra.id,
+          numeroParcela: i + 1,
+        },
+      });
+      despesasCriadas.push(despesa);
+    }
+
+    return { compra, despesas: despesasCriadas };
+  });
+
+  return res.status(201).json(resultado);
 }
 
 async function listar(req, res) {
@@ -126,17 +222,23 @@ async function listar(req, res) {
       d.data_despesa AS "dataDespesa",
       d.compra_insumo_id AS "compraInsumoId",
       d.pro_labore_id AS "proLaboreId",
+      d.compra_parcelada_id AS "compraParceladaId",
+      d.numero_parcela AS "numeroParcela",
+      d.forma_pagamento AS "formaPagamento",
       d.created_at AS "createdAt",
-      ci.insumo_id AS "compraInsumoInsumoId"
+      ci.insumo_id AS "compraInsumoInsumoId",
+      cp.total_parcelas AS "compraParceladaTotalParcelas"
     FROM despesas_gerais d
     LEFT JOIN compras_insumo ci ON ci.id = d.compra_insumo_id
+    LEFT JOIN compras_parceladas cp ON cp.id = d.compra_parcelada_id
     ${filtroPeriodo}
     ORDER BY COALESCE(d.data_vencimento, d.data_despesa) DESC
   `;
 
-  const despesas = linhas.map(({ compraInsumoInsumoId, ...despesa }) => ({
+  const despesas = linhas.map(({ compraInsumoInsumoId, compraParceladaTotalParcelas, ...despesa }) => ({
     ...despesa,
     compraInsumo: compraInsumoInsumoId !== null ? { insumoId: compraInsumoInsumoId } : null,
+    compraParcelada: compraParceladaTotalParcelas !== null ? { totalParcelas: compraParceladaTotalParcelas } : null,
   }));
 
   return res.json(despesas);
@@ -180,10 +282,15 @@ async function editar(req, res) {
   if (despesaAntes.proLaboreId !== null) {
     return res.status(409).json({ error: ERRO_DESPESA_DE_PRO_LABORE });
   }
+  if (despesaAntes.compraParceladaId !== null) {
+    return res.status(409).json({ error: ERRO_DESPESA_PARCELADA });
+  }
 
-  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento } = req.body;
+  const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento, formaPagamento } =
+    req.body;
   const data = {};
   if (descricao !== undefined) data.descricao = descricao.trim();
+  if (formaPagamento !== undefined) data.formaPagamento = formaPagamento ? formaPagamento.trim() : null;
   if (valor !== undefined) data.valor = valor;
   if (categoria !== undefined) data.categoria = categoria ? categoria.trim() : null;
   if (dataDespesa !== undefined) data.dataDespesa = new Date(dataDespesa);
@@ -236,6 +343,21 @@ async function remover(req, res) {
   }
   if (despesa.proLaboreId !== null) {
     return res.status(409).json({ error: ERRO_DESPESA_DE_PRO_LABORE });
+  }
+  if (despesa.compraParceladaId !== null) {
+    const parcelas = await prisma.despesaGeral.findMany({
+      where: { compraParceladaId: despesa.compraParceladaId },
+    });
+    if (parcelas.some((p) => p.pago)) {
+      return res.status(409).json({
+        error: "Essa compra parcelada já tem parcela(s) paga(s) - não é possível remover.",
+      });
+    }
+    await prisma.$transaction([
+      prisma.despesaGeral.deleteMany({ where: { compraParceladaId: despesa.compraParceladaId } }),
+      prisma.compraParcelada.delete({ where: { id: despesa.compraParceladaId } }),
+    ]);
+    return res.status(204).send();
   }
 
   const ehOrigemComCopias =
@@ -297,4 +419,13 @@ async function marcarComoEmAberto(req, res) {
   return res.json(atualizada);
 }
 
-module.exports = { criar, listar, detalhe, editar, remover, marcarComoPaga, marcarComoEmAberto };
+module.exports = {
+  criar,
+  criarParcelada,
+  listar,
+  detalhe,
+  editar,
+  remover,
+  marcarComoPaga,
+  marcarComoEmAberto,
+};

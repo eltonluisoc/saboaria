@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   useCriarDespesa,
+  useCriarDespesaParcelada,
   useDespesas,
   useEditarDespesa,
   useMarcarDespesaEmAberto,
@@ -46,9 +47,12 @@ export function DespesasPage() {
 
   async function handleRemover(despesa: DespesaGeral) {
     const fazParteDeRecorrencia = despesa.recorrente || despesa.despesaOrigemId !== null;
-    const mensagem = fazParteDeRecorrencia
-      ? `Remover a despesa recorrente "${despesa.descricao}"? Isso remove TODAS as ocorrências dessa recorrência (inclusive as já pagas) e para a geração automática de novas cópias.`
-      : `Remover a despesa "${despesa.descricao}"?`;
+    const mensagem =
+      despesa.compraParceladaId !== null
+        ? `Remover a compra parcelada "${despesa.descricao}"? Isso remove TODAS as ${despesa.compraParcelada?.totalParcelas ?? ""} parcelas dessa compra (só é possível porque nenhuma foi paga ainda).`
+        : fazParteDeRecorrencia
+          ? `Remover a despesa recorrente "${despesa.descricao}"? Isso remove TODAS as ocorrências dessa recorrência (inclusive as já pagas) e para a geração automática de novas cópias.`
+          : `Remover a despesa "${despesa.descricao}"?`;
     if (!confirm(mensagem)) return;
     setActionError(null);
     try {
@@ -205,6 +209,13 @@ export function DespesasPage() {
                     </Link>
                   );
                 }
+                if (row.compraParceladaId !== null) {
+                  return (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      Parcela {row.numeroParcela}/{row.compraParcelada?.totalParcelas ?? "?"}
+                    </span>
+                  );
+                }
                 if (row.despesaOrigemId !== null) {
                   return (
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -215,8 +226,9 @@ export function DespesasPage() {
                 return "—";
               },
             },
+            { header: "Forma de pagamento", render: (row) => row.formaPagamento ?? "—" },
             {
-              header: "Pagamento",
+              header: "Status",
               render: (row) =>
                 row.pago ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
@@ -232,12 +244,16 @@ export function DespesasPage() {
             },
             {
               header: "Ações",
-              render: (row) =>
-                row.compraInsumoId !== null ? (
-                  <span className="text-sm text-slate-400">Editar em Insumos</span>
-                ) : row.proLaboreId !== null ? (
-                  <span className="text-sm text-slate-400">Editar em Pró-labore</span>
-                ) : (
+              render: (row) => {
+                const editarLabel =
+                  row.compraInsumoId !== null
+                    ? "Editar em Insumos"
+                    : row.proLaboreId !== null
+                      ? "Editar em Pró-labore"
+                      : row.compraParceladaId !== null
+                        ? "Editar bloqueado"
+                        : null;
+                return (
                   <div className="flex gap-3">
                     <button
                       className="text-sm text-slate-600 hover:underline"
@@ -245,14 +261,19 @@ export function DespesasPage() {
                     >
                       {row.pago ? "Marcar como em aberto" : "Marcar como paga"}
                     </button>
-                    <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalDespesa(row)}>
-                      Editar
-                    </button>
+                    {editarLabel !== null ? (
+                      <span className="text-sm text-slate-400">{editarLabel}</span>
+                    ) : (
+                      <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalDespesa(row)}>
+                        Editar
+                      </button>
+                    )}
                     <button className="text-sm text-red-600 hover:underline" onClick={() => handleRemover(row)}>
                       Remover
                     </button>
                   </div>
-                ),
+                );
+              },
             },
           ]}
         />
@@ -264,6 +285,8 @@ export function DespesasPage() {
     </div>
   );
 }
+
+const OPCOES_FORMA_PAGAMENTO = ["Dinheiro", "Pix", "Cartão de débito", "Cartão de crédito", "Boleto"];
 
 function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; onClose: () => void }) {
   const [descricao, setDescricao] = useState(despesa?.descricao ?? "");
@@ -277,15 +300,38 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
     despesa?.dataFimRecorrencia?.slice(0, 10) ?? ""
   );
   const [dataVencimento, setDataVencimento] = useState(despesa?.dataVencimento?.slice(0, 10) ?? "");
+  const [formaPagamento, setFormaPagamento] = useState(despesa?.formaPagamento ?? "");
+  const [parcelado, setParcelado] = useState(false);
+  const [numeroParcelas, setNumeroParcelas] = useState("2");
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarDespesa();
   const editar = useEditarDespesa(despesa?.id ?? 0);
-  const salvando = criar.isPending || editar.isPending;
+  const criarParcelada = useCriarDespesaParcelada();
+  const salvando = criar.isPending || editar.isPending || criarParcelada.isPending;
+
+  function handleParceladoChange(marcado: boolean) {
+    setParcelado(marcado);
+    if (marcado && !formaPagamento) {
+      setFormaPagamento("Cartão de crédito");
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     try {
+      if (!despesa && parcelado) {
+        await criarParcelada.mutateAsync({
+          descricao,
+          valorTotal: Number(valor),
+          categoria: categoria || null,
+          dataDespesa,
+          formaPagamento: formaPagamento || null,
+          totalParcelas: Number(numeroParcelas),
+        });
+        onClose();
+        return;
+      }
       const dados = {
         descricao,
         valor: Number(valor),
@@ -294,6 +340,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
         recorrente,
         dataFimRecorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
         dataVencimento: dataVencimento || null,
+        formaPagamento: formaPagamento || null,
       };
       if (despesa) {
         await editar.mutateAsync(dados);
@@ -312,7 +359,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
         {error && <ErrorBanner message={error} />}
         <Input label="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} required />
         <Input
-          label="Valor (R$)"
+          label={parcelado ? "Valor total (R$)" : "Valor (R$)"}
           type="number"
           step="any"
           min="0"
@@ -328,23 +375,63 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
           onChange={(e) => setDataDespesa(e.target.value)}
           required
         />
-        <Input
-          label="Data de vencimento (opcional, se vazio considera a data da despesa)"
-          type="date"
-          value={dataVencimento}
-          onChange={(e) => setDataVencimento(e.target.value)}
-        />
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />
-          Despesa recorrente (ex: aluguel mensal)
+        <label className="block text-sm text-slate-700">
+          Forma de pagamento
+          <select
+            className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            value={formaPagamento}
+            onChange={(e) => setFormaPagamento(e.target.value)}
+          >
+            <option value="">—</option>
+            {OPCOES_FORMA_PAGAMENTO.map((opcao) => (
+              <option key={opcao} value={opcao}>
+                {opcao}
+              </option>
+            ))}
+          </select>
         </label>
-        {recorrente && (
+        {!despesa && (
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={parcelado}
+              onChange={(e) => handleParceladoChange(e.target.checked)}
+            />
+            Parcelado no cartão
+          </label>
+        )}
+        {parcelado ? (
           <Input
-            label="Data de fim da recorrência (opcional, vazio = indefinida)"
-            type="date"
-            value={dataFimRecorrencia}
-            onChange={(e) => setDataFimRecorrencia(e.target.value)}
+            label="Número de parcelas"
+            type="number"
+            min="2"
+            max="36"
+            step="1"
+            value={numeroParcelas}
+            onChange={(e) => setNumeroParcelas(e.target.value)}
+            required
           />
+        ) : (
+          <>
+            <Input
+              label="Data de vencimento (opcional, se vazio considera a data da despesa)"
+              type="date"
+              value={dataVencimento}
+              onChange={(e) => setDataVencimento(e.target.value)}
+            />
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />
+              Despesa recorrente (ex: aluguel mensal)
+            </label>
+            {recorrente && (
+              <Input
+                label="Data de fim da recorrência (opcional, vazio = indefinida)"
+                type="date"
+                value={dataFimRecorrencia}
+                onChange={(e) => setDataFimRecorrencia(e.target.value)}
+              />
+            )}
+          </>
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>

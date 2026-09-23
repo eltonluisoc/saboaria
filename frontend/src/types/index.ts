@@ -67,6 +67,10 @@ export interface DespesaGeral {
   compraInsumoId: number | null;
   compraInsumo?: { insumoId: number } | null;
   proLaboreId: number | null;
+  compraParceladaId: number | null;
+  compraParcelada?: { totalParcelas: number } | null;
+  numeroParcela: number | null;
+  formaPagamento: string | null;
   createdAt: string;
 }
 
