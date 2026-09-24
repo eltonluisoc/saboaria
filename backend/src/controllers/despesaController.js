@@ -21,6 +21,9 @@ const ERRO_DESPESA_DE_PRO_LABORE =
 const ERRO_DESPESA_PARCELADA =
   "Essa despesa faz parte de uma compra parcelada - pra corrigir, remova a compra inteira (só é possível se nenhuma parcela estiver paga) e cadastre de novo.";
 
+const ERRO_RECORRENCIA_EM_COPIA =
+  "Recorrência (checkbox e data de fim) só pode ser alterada na despesa original, não numa ocorrência gerada - os outros campos (valor, descrição, categoria, vencimento) continuam editáveis normalmente aqui.";
+
 const FORMA_PAGAMENTO_PADRAO_PARCELADA = "Cartão de crédito";
 
 function ultimoDiaDoMes(ano, mes) {
@@ -284,6 +287,12 @@ async function editar(req, res) {
   }
   if (despesaAntes.compraParceladaId !== null) {
     return res.status(409).json({ error: ERRO_DESPESA_PARCELADA });
+  }
+  if (
+    despesaAntes.despesaOrigemId !== null &&
+    (req.body.recorrente !== undefined || req.body.dataFimRecorrencia !== undefined)
+  ) {
+    return res.status(400).json({ error: ERRO_RECORRENCIA_EM_COPIA });
   }
 
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento, formaPagamento } =

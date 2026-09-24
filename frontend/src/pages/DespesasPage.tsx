@@ -553,6 +553,10 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
   const editar = useEditarDespesa(despesa?.id ?? 0);
   const criarParcelada = useCriarDespesaParcelada();
   const salvando = criar.isPending || editar.isPending || criarParcelada.isPending;
+  // Uma copia gerada por recorrencia (despesaOrigemId != null) so aceita
+  // ajuste pontual daquele mes - checkbox/data de fim de recorrencia so tem
+  // efeito na despesa original, entao nem mostramos esses campos aqui.
+  const ehCopiaDeRecorrencia = despesa !== null && despesa.despesaOrigemId !== null;
 
   function handleParceladoChange(marcado: boolean) {
     setParcelado(marcado);
@@ -582,10 +586,17 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
         valor: Number(valor),
         categoria: categoria || null,
         dataDespesa,
-        recorrente,
-        dataFimRecorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
         dataVencimento: dataVencimento || null,
         formaPagamento: formaPagamento || null,
+        // Numa copia gerada, recorrente/dataFimRecorrencia nao tem efeito (so
+        // a despesa original dispara a geracao) - nem mandamos esses campos,
+        // pra nao depender do 400 novo do backend como rede de seguranca.
+        ...(ehCopiaDeRecorrencia
+          ? {}
+          : {
+              recorrente,
+              dataFimRecorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
+            }),
       };
       if (despesa) {
         await editar.mutateAsync(dados);
@@ -664,17 +675,26 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
               value={dataVencimento}
               onChange={(e) => setDataVencimento(e.target.value)}
             />
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />
-              Despesa recorrente (ex: aluguel mensal)
-            </label>
-            {recorrente && (
-              <Input
-                label="Data de fim da recorrência (opcional, vazio = indefinida)"
-                type="date"
-                value={dataFimRecorrencia}
-                onChange={(e) => setDataFimRecorrencia(e.target.value)}
-              />
+            {ehCopiaDeRecorrencia ? (
+              <p className="rounded-md bg-slate-50 p-3 text-xs text-slate-500">
+                Esta despesa é uma ocorrência gerada por uma recorrência. Editar aqui só muda este mês — pra mudar a
+                recorrência em si (valor das próximas parcelas ou data de fim), edite a despesa original.
+              </p>
+            ) : (
+              <>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />
+                  Despesa recorrente (ex: aluguel mensal)
+                </label>
+                {recorrente && (
+                  <Input
+                    label="Data de fim da recorrência (opcional, vazio = indefinida)"
+                    type="date"
+                    value={dataFimRecorrencia}
+                    onChange={(e) => setDataFimRecorrencia(e.target.value)}
+                  />
+                )}
+              </>
             )}
           </>
         )}
