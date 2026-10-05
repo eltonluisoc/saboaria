@@ -24,6 +24,7 @@ export interface ProdutoInput {
   precoVenda: number;
   pesoUnidadeGramas?: number | null;
   ativo?: boolean;
+  emBreve?: boolean;
 }
 
 export function useCriarProduto() {

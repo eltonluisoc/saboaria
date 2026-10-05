@@ -62,7 +62,7 @@ async function criar(req, res) {
 
   const produtoIds = itens.map((item) => Number(item.produtoId));
   const produtos = await prisma.produto.findMany({
-    where: { id: { in: produtoIds }, ativo: true },
+    where: { id: { in: produtoIds }, ativo: true, emBreve: false },
   });
   const produtosPorId = new Map(produtos.map((p) => [p.id, p]));
 

@@ -84,13 +84,20 @@ export function ProdutosPage() {
             {
               header: "Status",
               render: (row) => (
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    row.ativo ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {row.ativo ? "Ativo" : "Inativo"}
-                </span>
+                <div className="flex flex-wrap gap-1">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      row.ativo ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {row.ativo ? "Ativo" : "Inativo"}
+                  </span>
+                  {row.emBreve && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      Em breve
+                    </span>
+                  )}
+                </div>
               ),
             },
             {
@@ -127,6 +134,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
   const [precoVenda, setPrecoVenda] = useState(produto?.precoVenda ?? "");
   const [pesoUnidadeGramas, setPesoUnidadeGramas] = useState(produto?.pesoUnidadeGramas ?? "");
   const [ativo, setAtivo] = useState(produto?.ativo ?? true);
+  const [emBreve, setEmBreve] = useState(produto?.emBreve ?? false);
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarProduto();
   const editar = useEditarProduto(produto?.id ?? 0);
@@ -143,6 +151,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         precoVenda: Number(precoVenda),
         pesoUnidadeGramas: pesoUnidadeGramas ? Number(pesoUnidadeGramas) : null,
         ativo,
+        emBreve,
       };
       if (produto) {
         await editar.mutateAsync(dados);
@@ -201,6 +210,10 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
           Ativo (visível no site quando o catálogo existir)
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={emBreve} onChange={(e) => setEmBreve(e.target.checked)} />
+          Em breve (aparece no catálogo, mas sem botão de comprar)
         </label>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>

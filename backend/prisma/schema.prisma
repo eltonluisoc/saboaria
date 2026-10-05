@@ -57,6 +57,7 @@ model Produto {
   pesoUnidadeGramas Decimal? @map("peso_unidade_gramas") @db.Decimal(10, 2)
   estoqueAtual      Int      @default(0) @map("estoque_atual")
   ativo             Boolean  @default(true)
+  emBreve           Boolean  @default(false) @map("em_breve")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

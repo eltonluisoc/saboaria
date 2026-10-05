@@ -36,6 +36,7 @@ export interface Produto {
   custoUnitarioCompleto: number;
   estoqueAtual: number;
   ativo: boolean;
+  emBreve: boolean;
   createdAt: string;
   updatedAt: string;
 }

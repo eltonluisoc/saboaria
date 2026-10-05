@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useCart } from "../context/CartContext";
+import { useCatalogo } from "../hooks/useCatalogo";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 const VALORES = ["Artesanal", "Natural", "Ancestral", "Sustentável", "Feito com amor"];
@@ -21,10 +22,20 @@ function CartIcon() {
 
 export function SiteLayout() {
   const { totalItens } = useCart();
+  const { data: produtos } = useCatalogo();
+  const produtoEmBreve = produtos?.find((p) => p.emBreve);
   useDocumentTitle("Lud'E — Sabonetes Artesanais");
 
   return (
     <div className="flex min-h-screen flex-col bg-brand-cream font-sans-brand text-brand-brown">
+      {produtoEmBreve && (
+        <Link
+          to={`/produto/${produtoEmBreve.id}`}
+          className="block bg-brand-gold px-4 py-2 text-center text-xs font-semibold uppercase tracking-widest text-brand-dark hover:underline"
+        >
+          ✨ Em breve: {produtoEmBreve.nome} — toda a Lud'E tem gente de olho
+        </Link>
+      )}
       <header className="sticky top-0 z-40 bg-brand-dark">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link to="/">

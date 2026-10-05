@@ -7,6 +7,7 @@ export interface ProdutoPublico {
   descricao: string | null;
   imagemUrl: string | null;
   precoVenda: string;
+  emBreve: boolean;
 }
 
 export function useCatalogo() {

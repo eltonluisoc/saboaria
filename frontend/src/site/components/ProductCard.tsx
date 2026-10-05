@@ -22,7 +22,7 @@ export function ProductCard({ produto }: { produto: ProdutoPublico }) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-lg border border-brand-olive/20 bg-white shadow-sm transition-shadow hover:shadow-md">
       <Link to={`/produto/${produto.id}`} className="flex flex-1 flex-col">
-        <div className="aspect-square w-full overflow-hidden bg-brand-cream">
+        <div className="relative aspect-square w-full overflow-hidden bg-brand-cream">
           {produto.imagemUrl ? (
             <img
               src={produto.imagemUrl}
@@ -34,44 +34,55 @@ export function ProductCard({ produto }: { produto: ProdutoPublico }) {
               <Sprig className="h-16 w-auto text-brand-olive/50" />
             </div>
           )}
+          {produto.emBreve && (
+            <span className="absolute left-3 top-3 rounded-full bg-brand-dark px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-gold">
+              Em breve
+            </span>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-1 p-4 pb-0">
           <h3 className="font-serif-brand text-lg text-brand-dark">{produto.nome}</h3>
           {produto.descricao && <p className="line-clamp-2 text-sm text-brand-brown/70">{produto.descricao}</p>}
-          <p className="mt-auto pt-2 font-serif-brand text-lg text-brand-gold">
-            {formatarPreco(produto.precoVenda)}
-          </p>
+          {!produto.emBreve && (
+            <p className="mt-auto pt-2 font-serif-brand text-lg text-brand-gold">
+              {formatarPreco(produto.precoVenda)}
+            </p>
+          )}
         </div>
       </Link>
 
-      <div className="flex items-center gap-2 p-4 pt-3">
-        <div className="flex items-center rounded-full border border-brand-olive/30">
+      {produto.emBreve ? (
+        <p className="p-4 pt-3 text-xs text-brand-brown/60">Fique de olho — chegando em breve.</p>
+      ) : (
+        <div className="flex items-center gap-2 p-4 pt-3">
+          <div className="flex items-center rounded-full border border-brand-olive/30">
+            <button
+              type="button"
+              className="px-2.5 py-1 text-brand-brown hover:text-brand-gold"
+              onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
+              aria-label="Diminuir quantidade"
+            >
+              −
+            </button>
+            <span className="w-6 text-center text-sm">{quantidade}</span>
+            <button
+              type="button"
+              className="px-2.5 py-1 text-brand-brown hover:text-brand-gold"
+              onClick={() => setQuantidade((q) => q + 1)}
+              aria-label="Aumentar quantidade"
+            >
+              +
+            </button>
+          </div>
           <button
             type="button"
-            className="px-2.5 py-1 text-brand-brown hover:text-brand-gold"
-            onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
-            aria-label="Diminuir quantidade"
+            onClick={handleAdicionar}
+            className="flex-1 rounded-full bg-brand-gold px-3 py-2 text-xs font-semibold uppercase tracking-widest text-brand-dark transition-transform hover:scale-105"
           >
-            −
-          </button>
-          <span className="w-6 text-center text-sm">{quantidade}</span>
-          <button
-            type="button"
-            className="px-2.5 py-1 text-brand-brown hover:text-brand-gold"
-            onClick={() => setQuantidade((q) => q + 1)}
-            aria-label="Aumentar quantidade"
-          >
-            +
+            {adicionado ? "Adicionado!" : "Adicionar"}
           </button>
         </div>
-        <button
-          type="button"
-          onClick={handleAdicionar}
-          className="flex-1 rounded-full bg-brand-gold px-3 py-2 text-xs font-semibold uppercase tracking-widest text-brand-dark transition-transform hover:scale-105"
-        >
-          {adicionado ? "Adicionado!" : "Adicionar"}
-        </button>
-      </div>
+      )}
     </div>
   );
 }
