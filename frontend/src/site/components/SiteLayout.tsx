@@ -33,7 +33,7 @@ export function SiteLayout() {
           to={`/produto/${produtoEmBreve.id}`}
           className="block bg-brand-gold px-4 py-2 text-center text-xs font-semibold uppercase tracking-widest text-brand-dark hover:underline"
         >
-          ✨ Em breve: {produtoEmBreve.nome} — toda a Lud'E tem gente de olho
+          ✨ Em breve: {produtoEmBreve.nome} — mal podemos esperar para você sentir isso também
         </Link>
       )}
       <header className="sticky top-0 z-40 bg-brand-dark">
