@@ -83,7 +83,7 @@ export function HomePage() {
     <div>
       <section className="relative flex flex-col items-center justify-center overflow-hidden bg-brand-dark px-6 py-14 text-center sm:py-20">
         <div
-          className="pointer-events-none absolute inset-0 opacity-60"
+          className="animate-aura-breathe pointer-events-none absolute inset-0 opacity-60"
           style={{
             background:
               "radial-gradient(60% 55% at 50% 35%, color-mix(in srgb, var(--color-brand-olive) 18%, transparent), transparent 70%)",

@@ -34,6 +34,19 @@ const INGREDIENTES: Ingrediente[] = [
       "Tradição no uso cosmético natural",
     ],
   },
+  {
+    nome: "Cereja com Avelã",
+    imagem: "/produtos/cereja-com-avela.jpeg",
+    paragrafos: [
+      "Cereja e avelã formam uma combinação clássica de aconchego e sofisticação — a fruta traz um toque adocicado natural, enquanto a avelã contribui com uma nota amadeirada que arredonda o aroma, sem depender de fragrância sintética.",
+      "Na receita, o extrato natural dessa dupla entra pelo cuidado com a pele: ajuda na hidratação e deixa um toque nutritivo, prevenindo o ressecamento — uma experiência de banho mais aconchegante do início ao fim.",
+    ],
+    porQueUsar: [
+      "Aroma adocicado natural, sem fragrância sintética",
+      "Toque nutritivo da avelã, ajuda a não ressecar",
+      "Combinação pensada pra uma experiência mais aconchegante no banho",
+    ],
+  },
 ];
 
 export function IngredienteDestaque() {
