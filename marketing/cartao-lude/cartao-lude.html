@@ -1,0 +1,234 @@
+<title>Cartão Lud'E</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+  /* paleta e tipografia da Lud'E (mesmos tokens do site) — cartão de marca
+     único, sempre no tom escuro, por isso um só tema (sem variantes claras) */
+  :root {
+    --bg: #2e3524;
+    --bg-deep: #1f2418;
+    --ink: #f5efe1;
+    --ink-soft: #cfd0bd;
+    --gold: #c9a15a;
+    --gold-soft: #c9a15a99;
+    --font-display: "Playfair Display", Georgia, serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-deep);
+    font-family: var(--font-body);
+    padding-block: 32px;
+  }
+
+  .card {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    min-height: min(820px, 100svh - 64px);
+    background:
+      radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 60%),
+      var(--bg);
+    border-radius: 28px;
+    overflow: hidden;
+    padding: 56px max(28px, env(safe-area-inset-left, 0px)) 40px max(28px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: clamp(24px, 8svh, 72px);
+  }
+
+  .sprig {
+    width: 26px;
+    height: 48px;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(42px, 11vw, 56px);
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .tagline {
+    margin-top: 14px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .links {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(28px, 6svh, 48px);
+    width: 100%;
+    padding-block: 24px;
+  }
+
+  .row {
+    display: flex;
+    gap: clamp(28px, 10vw, 56px);
+  }
+
+  .link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bubble {
+    width: 88px;
+    height: 88px;
+    border-radius: 999px;
+    border: 1.5px solid var(--gold-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+
+  .bubble svg {
+    width: 34px;
+    height: 34px;
+    stroke: var(--gold);
+  }
+
+  .link:hover .bubble,
+  .link:focus-visible .bubble {
+    transform: translateY(-4px) scale(1.04);
+    background: color-mix(in srgb, var(--gold) 12%, transparent);
+    border-color: var(--gold);
+  }
+
+  .link:active .bubble {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .link:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 6px;
+    border-radius: 999px;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--gold-soft);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .hint svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--gold-soft);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 380px) {
+    .row { gap: 22px; }
+    .bubble { width: 76px; height: 76px; }
+    .bubble svg { width: 28px; height: 28px; }
+  }
+</style>
+
+<div class="card">
+  <div class="brand">
+    <svg class="sprig" viewBox="0 0 120 220" fill="none" aria-hidden="true">
+      <path d="M62 210 C56 170 68 140 58 100 C50 70 64 45 60 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <path d="M0 0 C5 -5 5 -15 0 -22 C-5 -15 -5 -5 0 0 Z" fill="currentColor" transform="translate(59 190) rotate(-60) scale(1)"/>
+      <path d="M0 0 C5 -5 5 -15 0 -22 C-5 -15 -5 -5 0 0 Z" fill="currentColor" transform="translate(64 165) rotate(55) scale(0.95)"/>
+      <path d="M0 0 C5 -5 5 -15 0 -22 C-5 -15 -5 -5 0 0 Z" fill="currentColor" transform="translate(56 135) rotate(-50) scale(0.9)"/>
+      <path d="M0 0 C5 -5 5 -15 0 -22 C-5 -15 -5 -5 0 0 Z" fill="currentColor" transform="translate(62 105) rotate(50) scale(0.85)"/>
+      <path d="M0 0 C5 -5 5 -15 0 -22 C-5 -15 -5 -5 0 0 Z" fill="currentColor" transform="translate(55 75) rotate(-45) scale(0.75)"/>
+      <path d="M0 0 C5 -5 5 -15 0 -22 C-5 -15 -5 -5 0 0 Z" fill="currentColor" transform="translate(60 45) rotate(40) scale(0.65)"/>
+    </svg>
+    <div class="wordmark">Lud&apos;E</div>
+    <div class="tagline">Saboaria Artesanal</div>
+  </div>
+
+  <nav class="links" aria-label="Contatos da Lud'E">
+    <div class="row">
+      <a class="link" href="https://instagram.com/casa.lude" target="_blank" rel="noopener">
+        <span class="bubble">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <circle cx="12" cy="12" r="4.2"/>
+            <circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        <span class="label">Instagram</span>
+      </a>
+      <a class="link" href="https://www.casalude.com.br" target="_blank" rel="noopener">
+        <span class="bubble">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12h18M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/>
+          </svg>
+        </span>
+        <span class="label">Site</span>
+      </a>
+    </div>
+    <a class="link" href="https://wa.me/5571992978648" target="_blank" rel="noopener">
+      <span class="bubble">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3Z"/>
+          <path d="M8.3 8.6c-.2.6-.1 1.6.6 2.9 .9 1.7 2.4 3.1 4.1 3.7 1.3.5 2 .4 2.5.2.4-.1 1-.8 1.1-1.3.1-.4 0-.7-.2-.8l-1.8-.9c-.3-.1-.5-.1-.7.1l-.6.7c-.2.2-.4.2-.6.1-.9-.4-1.9-1.2-2.6-2.2-.1-.2-.1-.4.1-.6l.6-.7c.2-.2.2-.4.1-.7l-.8-1.9c-.1-.3-.4-.4-.7-.3-.5.1-1.1.4-1.1.9Z" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
+      <span class="label">WhatsApp</span>
+    </a>
+  </nav>
+
+  <p class="hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 11V6.5a1.5 1.5 0 0 1 3 0V11"/>
+      <path d="M12 10.5V5a1.5 1.5 0 0 1 3 0v6"/>
+      <path d="M15 11V7a1.5 1.5 0 0 1 3 0v7c0 3.3-2.2 6-6 6s-5.6-1.6-6.8-3.6L3.6 14a1.4 1.4 0 0 1 2.4-1.4L9 15"/>
+    </svg>
+    Toque nos ícones para nos encontrar
+  </p>
+</div>
