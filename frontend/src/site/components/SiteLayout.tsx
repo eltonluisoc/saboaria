@@ -24,7 +24,7 @@ export function SiteLayout() {
   const { totalItens } = useCart();
   const { data: produtos } = useCatalogo();
   const produtoEmBreve = produtos?.find((p) => p.emBreve);
-  useDocumentTitle("Lud'E — Sabonetes Artesanais");
+  useDocumentTitle("Lud'E — Rituais & Ancestralidade");
 
   return (
     <div className="flex min-h-screen flex-col bg-brand-cream font-sans-brand text-brand-brown">

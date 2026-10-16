@@ -9,7 +9,7 @@ export function CatalogoPage() {
     <div className="mx-auto max-w-6xl px-6 py-16">
       <div className="mb-10 text-center">
         <h1 className="font-serif-brand text-4xl text-brand-dark">Catálogo</h1>
-        <p className="mt-2 text-sm text-brand-brown/70">Sabonetes e rituais de banho feitos à mão</p>
+        <p className="mt-2 text-sm text-brand-brown/70">Rituais artesanais para o banho, a casa e o dia a dia</p>
       </div>
 
       {isLoading && <Loading />}
