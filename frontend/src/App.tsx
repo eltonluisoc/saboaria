@@ -6,6 +6,7 @@ import { Spinner } from "./components/ui/Spinner";
 import { CartProvider } from "./site/context/CartContext";
 import { SiteLayout } from "./site/components/SiteLayout";
 import { HomePage } from "./site/pages/HomePage";
+import { SaibaMaisPage } from "./site/pages/SaibaMaisPage";
 import { CatalogoPage } from "./site/pages/CatalogoPage";
 import { ProdutoPage } from "./site/pages/ProdutoPage";
 import { CarrinhoPage } from "./site/pages/CarrinhoPage";
@@ -54,6 +55,7 @@ export default function App() {
             {/* site público */}
             <Route element={<SiteLayout />}>
               <Route path="/" element={<HomePage />} />
+              <Route path="/saiba-mais" element={<SaibaMaisPage />} />
               <Route path="/catalogo" element={<CatalogoPage />} />
               <Route path="/produto/:id" element={<ProdutoPage />} />
               <Route path="/carrinho" element={<CarrinhoPage />} />

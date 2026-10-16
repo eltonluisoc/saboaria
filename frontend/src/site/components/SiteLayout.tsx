@@ -59,6 +59,14 @@ export function SiteLayout() {
             >
               Catálogo
             </NavLink>
+            <NavLink
+              to="/saiba-mais"
+              className={({ isActive }) =>
+                `-mx-2 rounded px-2 py-2 ${isActive ? "text-brand-gold" : "hover:text-brand-gold"}`
+              }
+            >
+              Saiba mais
+            </NavLink>
             <Link to="/carrinho" className="-m-2 flex items-center gap-1 p-2 hover:text-brand-gold">
               <span className="relative flex items-center">
                 <CartIcon />

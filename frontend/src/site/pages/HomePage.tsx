@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Logo } from "../components/Logo";
 import { Sprig } from "../components/Sprig";
 import { HomeProductTile } from "../components/HomeProductTile";
-import { IngredienteDestaque } from "../components/IngredienteDestaque";
 import { Loading } from "../components/Loading";
 import { Reveal } from "../components/Reveal";
 import { useCatalogo } from "../hooks/useCatalogo";
@@ -166,7 +165,28 @@ export function HomePage() {
         </div>
       </section>
 
-      <IngredienteDestaque />
+      <section className="bg-brand-cream px-6 pb-16 sm:pb-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <Reveal>
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">
+              História &amp; detalhes
+            </span>
+            <h2 className="mt-3 font-serif-brand text-3xl text-brand-dark">
+              Quer saber mais sobre a história e os detalhes dos nossos produtos?
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-brand-brown/75">
+              Cada ingrediente da Lud&apos;E tem uma razão de estar na receita. Descubra a história e
+              os detalhes por trás de cada produto.
+            </p>
+            <Link
+              to="/saiba-mais"
+              className="mt-7 inline-block rounded-full bg-brand-gold px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-dark transition-transform hover:scale-105"
+            >
+              Saiba mais
+            </Link>
+          </Reveal>
+        </div>
+      </section>
     </div>
   );
 }
