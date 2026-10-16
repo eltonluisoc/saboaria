@@ -39,6 +39,11 @@ export function ProductCard({ produto }: { produto: ProdutoPublico }) {
               Em breve
             </span>
           )}
+          {produto.ehKit && (
+            <span className="absolute right-3 top-3 rounded-full bg-brand-gold px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-dark">
+              Kit
+            </span>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-1 p-4 pb-0">
           <h3 className="font-serif-brand text-lg text-brand-dark">{produto.nome}</h3>

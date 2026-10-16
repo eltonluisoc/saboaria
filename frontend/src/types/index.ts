@@ -37,6 +37,8 @@ export interface Produto {
   estoqueAtual: number;
   ativo: boolean;
   emBreve: boolean;
+  ehKit: boolean;
+  estoqueDisponivelKit: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,8 +51,17 @@ export interface ProdutoInsumoItem {
   insumo: Insumo;
 }
 
+export interface KitItem {
+  id: number;
+  kitId: number;
+  produtoId: number;
+  quantidade: number;
+  produto: Produto;
+}
+
 export interface ProdutoDetalhado extends Produto {
   receita: ProdutoInsumoItem[];
+  composicaoKit: KitItem[];
 }
 
 export interface DespesaGeral {

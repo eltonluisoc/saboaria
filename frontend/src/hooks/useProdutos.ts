@@ -25,6 +25,7 @@ export interface ProdutoInput {
   pesoUnidadeGramas?: number | null;
   ativo?: boolean;
   emBreve?: boolean;
+  ehKit?: boolean;
 }
 
 export function useCriarProduto() {
@@ -61,6 +62,20 @@ export function useSalvarReceita(produtoId: number) {
   return useMutation({
     mutationFn: (itens: ReceitaItemInput[]) =>
       api.put<ProdutoDetalhado>(`/api/admin/produtos/${produtoId}/receita`, itens),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["produtos"] }),
+  });
+}
+
+export interface KitItemInput {
+  produtoId: number;
+  quantidade: number;
+}
+
+export function useSalvarComposicaoKit(kitId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (itens: KitItemInput[]) =>
+      api.put<ProdutoDetalhado>(`/api/admin/produtos/${kitId}/kit-itens`, itens),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["produtos"] }),
   });
 }

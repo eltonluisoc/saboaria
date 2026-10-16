@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useProduto, useSalvarReceita } from "../hooks/useProdutos";
+import { useProduto, useProdutos, useSalvarReceita, useSalvarComposicaoKit } from "../hooks/useProdutos";
 import { useInsumos } from "../hooks/useInsumos";
 import { Button } from "../components/ui/Button";
 import { Input, Select } from "../components/ui/Input";
@@ -12,16 +12,26 @@ interface ReceitaLinha {
   quantidadeUsada: string;
 }
 
+interface KitLinha {
+  produtoId: number;
+  quantidade: string;
+}
+
 export function ProdutoDetailPage() {
   const { id } = useParams();
   const produtoId = Number(id);
   const { data: produto, isLoading } = useProduto(produtoId);
   const { data: insumos } = useInsumos();
+  const { data: produtos } = useProdutos();
   const salvarReceita = useSalvarReceita(produtoId);
+  const salvarKit = useSalvarComposicaoKit(produtoId);
 
   const [linhas, setLinhas] = useState<ReceitaLinha[]>([]);
   const [novoInsumoId, setNovoInsumoId] = useState("");
   const [novaQuantidade, setNovaQuantidade] = useState("");
+  const [itensKit, setItensKit] = useState<KitLinha[]>([]);
+  const [novoProdutoKitId, setNovoProdutoKitId] = useState("");
+  const [novaQuantidadeKit, setNovaQuantidadeKit] = useState("1");
   const [error, setError] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
@@ -33,11 +43,19 @@ export function ProdutoDetailPage() {
           quantidadeUsada: item.quantidadeUsada,
         }))
       );
+      setItensKit(
+        produto.composicaoKit.map((item) => ({
+          produtoId: item.produtoId,
+          quantidade: String(item.quantidade),
+        }))
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produto?.id]);
 
   const insumosPorId = new Map((insumos ?? []).map((i) => [i.id, i]));
+  const produtosPorId = new Map((produtos ?? []).map((p) => [p.id, p]));
+  const produtosDisponiveisParaKit = (produtos ?? []).filter((p) => !p.ehKit && p.id !== produtoId);
 
   function adicionarLinha() {
     if (!novoInsumoId || !novaQuantidade) return;
@@ -73,6 +91,40 @@ export function ProdutoDetailPage() {
     }
   }
 
+  function adicionarItemKit() {
+    if (!novoProdutoKitId || !novaQuantidadeKit) return;
+    const produtoCompId = Number(novoProdutoKitId);
+    if (itensKit.some((l) => l.produtoId === produtoCompId)) {
+      setError("Esse produto ja esta no kit");
+      return;
+    }
+    setItensKit([...itensKit, { produtoId: produtoCompId, quantidade: novaQuantidadeKit }]);
+    setNovoProdutoKitId("");
+    setNovaQuantidadeKit("1");
+    setError(null);
+  }
+
+  function removerItemKit(prodId: number) {
+    setItensKit(itensKit.filter((l) => l.produtoId !== prodId));
+  }
+
+  function atualizarQuantidadeKit(prodId: number, valor: string) {
+    setItensKit(itensKit.map((l) => (l.produtoId === prodId ? { ...l, quantidade: valor } : l)));
+  }
+
+  async function salvarComposicaoKit() {
+    setError(null);
+    setSucesso(false);
+    try {
+      await salvarKit.mutateAsync(
+        itensKit.map((l) => ({ produtoId: l.produtoId, quantidade: Number(l.quantidade) }))
+      );
+      setSucesso(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Erro ao salvar composição do kit");
+    }
+  }
+
   if (isLoading) return <Spinner />;
   if (!produto) return <ErrorBanner message="Produto nao encontrado" />;
 
@@ -102,8 +154,9 @@ export function ProdutoDetailPage() {
           {produto.custoPorKgMassa.toFixed(2)} · Custo médio (por unidade, insumos): R${" "}
           {Number(produto.custoMedio).toFixed(2)} · Custo completo (c/ rateio): R${" "}
           {produto.custoUnitarioCompleto.toFixed(2)} · Peso da unidade:{" "}
-          {produto.pesoUnidadeGramas ? `${produto.pesoUnidadeGramas}g` : "não definido"} · Estoque:{" "}
-          {produto.estoqueAtual} · Margem (insumos):{" "}
+          {produto.pesoUnidadeGramas ? `${produto.pesoUnidadeGramas}g` : "não definido"} · Estoque
+          {produto.ehKit ? " disponível (calculado pelos componentes)" : ""}:{" "}
+          {produto.ehKit ? (produto.estoqueDisponivelKit ?? "—") : produto.estoqueAtual} · Margem (insumos):{" "}
           <span className={margem >= 0 ? "text-emerald-700" : "text-red-700"}>R$ {margem.toFixed(2)}</span> ·{" "}
           <strong>Margem real (c/ rateio)</strong>:{" "}
           <span className={`font-medium ${margemReal >= 0 ? "text-emerald-700" : "text-red-700"}`}>
@@ -112,6 +165,7 @@ export function ProdutoDetailPage() {
         </p>
       </div>
 
+      {!produto.ehKit && (
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-3 text-lg font-medium text-slate-800">Receita</h2>
         <p className="mb-3 text-xs text-slate-500">
@@ -228,6 +282,118 @@ export function ProdutoDetailPage() {
           </Button>
         </div>
       </div>
+      )}
+
+      {produto.ehKit && (
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-medium text-slate-800">Composição do kit</h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Quando esse kit for vendido, cada produto abaixo tem seu próprio estoque baixado na
+          quantidade indicada — o kit em si não tem estoque próprio.
+        </p>
+
+        {error && (
+          <div className="mb-3">
+            <ErrorBanner message={error} />
+          </div>
+        )}
+        {sucesso && (
+          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+            Composição salva com sucesso.
+          </div>
+        )}
+
+        <div className="mb-4 overflow-x-auto rounded-md border border-slate-200">
+          <table className="w-full min-w-max text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-4 py-2 font-medium">Produto</th>
+                <th className="px-4 py-2 font-medium">Quantidade</th>
+                <th className="px-4 py-2 font-medium">Custo unitário</th>
+                <th className="px-4 py-2 font-medium">Subtotal</th>
+                <th className="px-4 py-2 font-medium" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {itensKit.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    Nenhum produto no kit ainda
+                  </td>
+                </tr>
+              )}
+              {itensKit.map((linha) => {
+                const componente = produtosPorId.get(linha.produtoId);
+                const subtotal = componente ? Number(linha.quantidade || 0) * Number(componente.custoMedio) : 0;
+                return (
+                  <tr key={linha.produtoId}>
+                    <td className="px-4 py-2">{componente?.nome ?? `#${linha.produtoId}`}</td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        value={linha.quantidade}
+                        onChange={(e) => atualizarQuantidadeKit(linha.produtoId, e.target.value)}
+                        className="w-20 rounded border border-slate-300 px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-4 py-2">R$ {Number(componente?.custoMedio ?? 0).toFixed(2)}</td>
+                    <td className="px-4 py-2">R$ {subtotal.toFixed(2)}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        className="text-red-600 hover:underline"
+                        onClick={() => removerItemKit(linha.produtoId)}
+                      >
+                        Remover
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <Select
+            label="Adicionar produto ao kit"
+            value={novoProdutoKitId}
+            onChange={(e) => setNovoProdutoKitId(e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {produtosDisponiveisParaKit
+              .filter((p) => !itensKit.some((l) => l.produtoId === p.id))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+          </Select>
+          <Input
+            label="Quantidade"
+            type="number"
+            step="1"
+            min="1"
+            value={novaQuantidadeKit}
+            onChange={(e) => setNovaQuantidadeKit(e.target.value)}
+          />
+          <Button type="button" variant="secondary" onClick={adicionarItemKit}>
+            Adicionar
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+          <p className="text-sm text-slate-600">
+            Custo médio do kit (soma dos componentes):{" "}
+            <span className="font-medium">R$ {Number(produto.custoMedio).toFixed(2)}</span>
+          </p>
+          <Button onClick={salvarComposicaoKit} disabled={salvarKit.isPending}>
+            {salvarKit.isPending ? "Salvando..." : "Salvar composição"}
+          </Button>
+        </div>
+      </div>
+      )}
     </div>
   );
 }

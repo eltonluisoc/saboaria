@@ -13,5 +13,6 @@ router.put("/:id", produtoController.editar);
 router.delete("/:id", produtoController.remover);
 
 router.put("/:id/receita", produtoController.substituirReceita);
+router.put("/:id/kit-itens", produtoController.substituirComposicaoKit);
 
 module.exports = router;

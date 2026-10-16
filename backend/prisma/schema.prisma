@@ -58,14 +58,30 @@ model Produto {
   estoqueAtual      Int      @default(0) @map("estoque_atual")
   ativo             Boolean  @default(true)
   emBreve           Boolean  @default(false) @map("em_breve")
+  ehKit             Boolean  @default(false) @map("eh_kit")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  receita       ProdutoInsumo[]
-  itensPedido   ItemPedido[]
-  lotesProducao LoteProducao[]
+  receita          ProdutoInsumo[]
+  itensPedido      ItemPedido[]
+  lotesProducao    LoteProducao[]
+  composicaoKit    KitItem[]       @relation("KitComposicao")
+  componenteDeKits KitItem[]       @relation("KitComponente")
 
   @@map("produtos")
+}
+
+model KitItem {
+  id         Int @id @default(autoincrement())
+  kitId      Int @map("kit_id")
+  produtoId  Int @map("produto_id")
+  quantidade Int @default(1)
+
+  kit     Produto @relation("KitComposicao", fields: [kitId], references: [id], onDelete: Cascade)
+  produto Produto @relation("KitComponente", fields: [produtoId], references: [id], onDelete: Restrict)
+
+  @@unique([kitId, produtoId])
+  @@map("kit_itens")
 }
 
 model ProdutoInsumo {

@@ -7,6 +7,7 @@ const CAMPOS_PUBLICOS = {
   imagemUrl: true,
   precoVenda: true,
   emBreve: true,
+  ehKit: true,
 };
 
 function parseId(param) {

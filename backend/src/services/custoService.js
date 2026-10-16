@@ -40,6 +40,27 @@ async function recalcularCustoProduto(tx, produtoId) {
   return { custoPorKg, custoMedio };
 }
 
+// Mesma ideia de recalcularCustoProduto, mas a "receita" de um kit e de
+// outros Produtos (KitItem), nao de Insumos - soma quantidade * custoMedio
+// de cada componente.
+async function recalcularCustoKit(tx, kitId) {
+  const [{ custo }] = await tx.$queryRaw`
+    SELECT COALESCE(SUM(ki.quantidade * p.custo_medio), 0)::numeric(12,4) AS custo
+    FROM kit_itens ki
+    JOIN produtos p ON p.id = ki.produto_id
+    WHERE ki.kit_id = ${kitId}
+  `;
+
+  const custoMedio = Number(custo);
+
+  await tx.produto.update({
+    where: { id: kitId },
+    data: { custoMedio },
+  });
+
+  return { custoMedio };
+}
+
 async function recalcularProdutosPorInsumo(tx, insumoId) {
   const receitas = await tx.produtoInsumo.findMany({
     where: { insumoId },
@@ -80,6 +101,7 @@ async function calcularCustoIndiretoPorUnidade(client) {
 module.exports = {
   recalcularCustoInsumo,
   recalcularCustoProduto,
+  recalcularCustoKit,
   recalcularProdutosPorInsumo,
   calcularCustoIndiretoPorUnidade,
 };

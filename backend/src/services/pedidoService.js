@@ -2,6 +2,32 @@ const { Prisma } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const { payment: paymentClient } = require("../config/mercadopago");
 
+// Baixa o estoque de um item vendido. Se o produto e um kit, baixa cada
+// componente da composicao (quantidade do componente x quantidade vendida
+// do kit) em vez do estoqueAtual do proprio kit (que fica sem uso - nunca e
+// incrementado por lote de producao, so produto simples e produzido).
+async function baixarEstoqueItem(tx, produtoId, quantidade) {
+  const produto = await tx.produto.findUnique({
+    where: { id: produtoId },
+    select: { ehKit: true, composicaoKit: { select: { produtoId: true, quantidade: true } } },
+  });
+
+  if (produto?.ehKit) {
+    for (const componente of produto.composicaoKit) {
+      await tx.produto.update({
+        where: { id: componente.produtoId },
+        data: { estoqueAtual: { decrement: componente.quantidade * quantidade } },
+      });
+    }
+    return;
+  }
+
+  await tx.produto.update({
+    where: { id: produtoId },
+    data: { estoqueAtual: { decrement: quantidade } },
+  });
+}
+
 async function criarPedidoComItens(
   tx,
   {
@@ -52,10 +78,7 @@ async function criarPedidoComItens(
 
   if (status === "pago") {
     for (const item of itensData) {
-      await tx.produto.update({
-        where: { id: item.produtoId },
-        data: { estoqueAtual: { decrement: item.quantidade } },
-      });
+      await baixarEstoqueItem(tx, item.produtoId, item.quantidade);
     }
   }
 
@@ -109,10 +132,7 @@ async function confirmarPagamento(paymentId) {
   return prisma.$transaction(async (tx) => {
     if (precisaDecrementarEstoque) {
       for (const item of pedido.itens) {
-        await tx.produto.update({
-          where: { id: item.produtoId },
-          data: { estoqueAtual: { decrement: item.quantidade } },
-        });
+        await baixarEstoqueItem(tx, item.produtoId, item.quantidade);
       }
     }
 

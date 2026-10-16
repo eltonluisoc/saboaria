@@ -8,6 +8,7 @@ export interface ProdutoPublico {
   imagemUrl: string | null;
   precoVenda: string;
   emBreve: boolean;
+  ehKit: boolean;
 }
 
 export function useCatalogo() {

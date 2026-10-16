@@ -55,6 +55,11 @@ export function ProdutoPage() {
               Em breve
             </span>
           )}
+          {produto.ehKit && (
+            <span className="absolute right-4 top-4 rounded-full bg-brand-gold px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-dark">
+              Kit
+            </span>
+          )}
         </div>
         <div>
           <h1 className="font-serif-brand text-4xl text-brand-dark">{produto.nome}</h1>

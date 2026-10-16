@@ -97,6 +97,11 @@ export function ProdutosPage() {
                       Em breve
                     </span>
                   )}
+                  {row.ehKit && (
+                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                      Kit
+                    </span>
+                  )}
                 </div>
               ),
             },
@@ -105,7 +110,7 @@ export function ProdutosPage() {
               render: (row) => (
                 <div className="flex gap-3">
                   <Link to={`/admin/produtos/${row.id}`} className="text-sm text-emerald-700 hover:underline">
-                    Receita
+                    {row.ehKit ? "Composição" : "Receita"}
                   </Link>
                   <button className="text-sm text-slate-600 hover:underline" onClick={() => setModalProduto(row)}>
                     Editar
@@ -135,6 +140,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
   const [pesoUnidadeGramas, setPesoUnidadeGramas] = useState(produto?.pesoUnidadeGramas ?? "");
   const [ativo, setAtivo] = useState(produto?.ativo ?? true);
   const [emBreve, setEmBreve] = useState(produto?.emBreve ?? false);
+  const [ehKit, setEhKit] = useState(produto?.ehKit ?? false);
   const [error, setError] = useState<string | null>(null);
   const criar = useCriarProduto();
   const editar = useEditarProduto(produto?.id ?? 0);
@@ -152,6 +158,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         pesoUnidadeGramas: pesoUnidadeGramas ? Number(pesoUnidadeGramas) : null,
         ativo,
         emBreve,
+        ehKit,
       };
       if (produto) {
         await editar.mutateAsync(dados);
@@ -214,6 +221,10 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={emBreve} onChange={(e) => setEmBreve(e.target.checked)} />
           Em breve (aparece no catálogo, mas sem botão de comprar)
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={ehKit} onChange={(e) => setEhKit(e.target.checked)} />
+          É um kit (composto por outros produtos — gerencie a composição na tela do produto)
         </label>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
