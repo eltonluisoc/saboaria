@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAlertas, useMediaVendas, useProdutosMaisVendidos, useRelatorio } from "../hooks/useRelatorio";
 import { Input } from "../components/ui/Input";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
@@ -380,7 +381,13 @@ function AlertasBlock({
 }: {
   despesasVencidas: { id: number; descricao: string; valor: string; dataVencimento: string | null; dataDespesa: string }[];
   insumosAbaixoDoMinimo: { id: number; nome: string; unidadeMedida: string; estoqueAtual: string; estoqueMinimo: string | null }[];
-  pedidosPendentes: { id: number; valorTotal: string; dataPedido: string; cliente: { nome: string } | null }[];
+  pedidosPendentes: {
+    id: number;
+    valorTotal: string;
+    dataPedido: string;
+    cliente: { nome: string } | null;
+    nomeComprador: string | null;
+  }[];
 }) {
   const semAlertas =
     despesasVencidas.length === 0 && insumosAbaixoDoMinimo.length === 0 && pedidosPendentes.length === 0;
@@ -425,11 +432,19 @@ function AlertasBlock({
           <ul className="space-y-1 text-sm text-sky-700">
             {pedidosPendentes.map((p) => (
               <li key={p.id}>
-                #{p.id} {p.cliente?.nome ?? "cliente nao identificado"} — {formatMoeda(p.valorTotal)} (desde{" "}
-                {formatData(p.dataPedido)})
+                <Link to={`/admin/pedidos/${p.id}`} className="hover:underline">
+                  #{p.id} {p.cliente?.nome ?? p.nomeComprador ?? "cliente nao identificado"} —{" "}
+                  {formatMoeda(p.valorTotal)} (desde {formatData(p.dataPedido)})
+                </Link>
               </li>
             ))}
           </ul>
+          <Link
+            to="/admin/pedidos?status=pendente"
+            className="mt-3 inline-block text-sm font-medium text-sky-800 hover:underline"
+          >
+            Ver todos os pedidos pendentes &rarr;
+          </Link>
         </div>
       )}
     </div>

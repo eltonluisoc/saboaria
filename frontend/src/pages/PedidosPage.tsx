@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { usePedidos } from "../hooks/usePedidos";
 import { useProdutos } from "../hooks/useProdutos";
 import { useRegistrarVenda } from "../hooks/useVendas";
@@ -24,9 +24,10 @@ const ORIGEM_CLASSES: Record<string, string> = {
 type OrigemFiltro = "" | "site" | "manual";
 
 export function PedidosPage() {
+  const [searchParams] = useSearchParams();
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(() => searchParams.get("status") ?? "");
   const [origem, setOrigem] = useState<OrigemFiltro>("");
   const [modalAberto, setModalAberto] = useState(false);
 
