@@ -5,9 +5,22 @@ const {
   calcularCustoIndiretoPorUnidade,
 } = require("../services/custoService");
 
+// Quando a receita vem carregada (detalhe), soma só os itens "por kg de
+// massa" (porUnidade=false) direto - preciso mesmo com embalagem (porUnidade
+// true) misturada na receita. Sem a receita carregada (listar, que não
+// inclui receita por ser uma lista de todos os produtos), cai pro cálculo
+// inverso de antes a partir do custoMedio - fica impreciso só nesse caso
+// pra produtos que já tem item por unidade na receita.
 function calcularCustoPorKgMassa(produto) {
   const peso = Number(produto.pesoUnidadeGramas);
   if (!peso) return 0;
+
+  if (Array.isArray(produto.receita)) {
+    return produto.receita
+      .filter((item) => !item.porUnidade)
+      .reduce((soma, item) => soma + Number(item.quantidadeUsada) * Number(item.insumo.custoUnitarioAtual), 0);
+  }
+
   return (Number(produto.custoMedio) * 1000) / peso;
 }
 
@@ -232,6 +245,9 @@ function validarReceitaBody(body) {
     if (!Number.isFinite(quantidadeUsada) || quantidadeUsada <= 0) {
       return "Cada item precisa de 'quantidadeUsada' maior que zero";
     }
+    if (item?.porUnidade !== undefined && typeof item.porUnidade !== "boolean") {
+      return "Campo 'porUnidade' deve ser booleano";
+    }
     if (idsVistos.has(insumoId)) {
       return `Insumo ${insumoId} aparece mais de uma vez na receita`;
     }
@@ -258,10 +274,11 @@ async function substituirReceita(req, res) {
   }
 
   const itens = req.body;
+  const temItemPorPeso = itens.some((item) => !item.porUnidade);
 
-  if (itens.length > 0 && !produtoExiste.pesoUnidadeGramas) {
+  if (temItemPorPeso && !produtoExiste.pesoUnidadeGramas) {
     return res.status(400).json({
-      error: "Defina o peso por unidade (g) do produto antes de cadastrar a receita",
+      error: "Defina o peso por unidade (g) do produto antes de cadastrar um item por kg de massa",
     });
   }
 
@@ -286,6 +303,7 @@ async function substituirReceita(req, res) {
           produtoId,
           insumoId: Number(item.insumoId),
           quantidadeUsada: item.quantidadeUsada,
+          porUnidade: item.porUnidade === true,
         })),
       });
     }

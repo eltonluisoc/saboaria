@@ -21,7 +21,13 @@ async function recalcularCustoProduto(tx, produtoId) {
     SELECT COALESCE(SUM(pi.quantidade_usada * i.custo_unitario_atual), 0)::numeric(12,4) AS custo
     FROM produto_insumo pi
     JOIN insumos i ON i.id = pi.insumo_id
-    WHERE pi.produto_id = ${produtoId}
+    WHERE pi.produto_id = ${produtoId} AND pi.por_unidade = false
+  `;
+  const [{ custoDireto }] = await tx.$queryRaw`
+    SELECT COALESCE(SUM(pi.quantidade_usada * i.custo_unitario_atual), 0)::numeric(12,4) AS "custoDireto"
+    FROM produto_insumo pi
+    JOIN insumos i ON i.id = pi.insumo_id
+    WHERE pi.produto_id = ${produtoId} AND pi.por_unidade = true
   `;
 
   const produto = await tx.produto.findUnique({
@@ -30,7 +36,8 @@ async function recalcularCustoProduto(tx, produtoId) {
   });
   const pesoGramas = produto?.pesoUnidadeGramas ? Number(produto.pesoUnidadeGramas) : 0;
   const custoPorKg = Number(custo);
-  const custoMedio = (custoPorKg * pesoGramas) / 1000;
+  const custoPorUnidade = Number(custoDireto);
+  const custoMedio = (custoPorKg * pesoGramas) / 1000 + custoPorUnidade;
 
   await tx.produto.update({
     where: { id: produtoId },

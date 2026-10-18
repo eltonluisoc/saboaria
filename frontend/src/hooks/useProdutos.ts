@@ -55,6 +55,7 @@ export function useRemoverProduto() {
 export interface ReceitaItemInput {
   insumoId: number;
   quantidadeUsada: number;
+  porUnidade?: boolean;
 }
 
 export function useSalvarReceita(produtoId: number) {

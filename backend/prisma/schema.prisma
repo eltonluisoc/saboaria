@@ -89,6 +89,12 @@ model ProdutoInsumo {
   produtoId       Int     @map("produto_id")
   insumoId        Int     @map("insumo_id")
   quantidadeUsada Decimal @map("quantidade_usada") @db.Decimal(12, 4)
+  // Quando true, quantidadeUsada e contada direto por unidade vendida (ex:
+  // 1 frasco por produto), sem escalar pelo peso do lote - usado pra
+  // embalagem, que custa o mesmo independente do pesoUnidadeGramas do
+  // produto. Quando false (padrao, igual sempre foi), quantidadeUsada e
+  // por 1kg de massa produzida e escala com o peso da unidade.
+  porUnidade      Boolean @default(false) @map("por_unidade")
 
   produto Produto @relation(fields: [produtoId], references: [id], onDelete: Cascade)
   insumo  Insumo  @relation(fields: [insumoId], references: [id], onDelete: Restrict)

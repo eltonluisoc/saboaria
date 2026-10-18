@@ -10,6 +10,7 @@ import { ApiError } from "../lib/api";
 interface ReceitaLinha {
   insumoId: number;
   quantidadeUsada: string;
+  porUnidade: boolean;
 }
 
 interface KitLinha {
@@ -29,6 +30,7 @@ export function ProdutoDetailPage() {
   const [linhas, setLinhas] = useState<ReceitaLinha[]>([]);
   const [novoInsumoId, setNovoInsumoId] = useState("");
   const [novaQuantidade, setNovaQuantidade] = useState("");
+  const [novoPorUnidade, setNovoPorUnidade] = useState(false);
   const [itensKit, setItensKit] = useState<KitLinha[]>([]);
   const [novoProdutoKitId, setNovoProdutoKitId] = useState("");
   const [novaQuantidadeKit, setNovaQuantidadeKit] = useState("1");
@@ -41,6 +43,7 @@ export function ProdutoDetailPage() {
         produto.receita.map((item) => ({
           insumoId: item.insumoId,
           quantidadeUsada: item.quantidadeUsada,
+          porUnidade: item.porUnidade,
         }))
       );
       setItensKit(
@@ -64,9 +67,10 @@ export function ProdutoDetailPage() {
       setError("Esse insumo ja esta na receita");
       return;
     }
-    setLinhas([...linhas, { insumoId, quantidadeUsada: novaQuantidade }]);
+    setLinhas([...linhas, { insumoId, quantidadeUsada: novaQuantidade, porUnidade: novoPorUnidade }]);
     setNovoInsumoId("");
     setNovaQuantidade("");
+    setNovoPorUnidade(false);
     setError(null);
   }
 
@@ -78,12 +82,20 @@ export function ProdutoDetailPage() {
     setLinhas(linhas.map((l) => (l.insumoId === insumoId ? { ...l, quantidadeUsada: valor } : l)));
   }
 
+  function atualizarPorUnidade(insumoId: number, valor: boolean) {
+    setLinhas(linhas.map((l) => (l.insumoId === insumoId ? { ...l, porUnidade: valor } : l)));
+  }
+
   async function salvar() {
     setError(null);
     setSucesso(false);
     try {
       await salvarReceita.mutateAsync(
-        linhas.map((l) => ({ insumoId: l.insumoId, quantidadeUsada: Number(l.quantidadeUsada) }))
+        linhas.map((l) => ({
+          insumoId: l.insumoId,
+          quantidadeUsada: Number(l.quantidadeUsada),
+          porUnidade: l.porUnidade,
+        }))
       );
       setSucesso(true);
     } catch (err) {
@@ -129,15 +141,23 @@ export function ProdutoDetailPage() {
   if (!produto) return <ErrorBanner message="Produto nao encontrado" />;
 
   const custoPorKgCalculado = linhas.reduce((soma, l) => {
+    if (l.porUnidade) return soma;
     const insumo = insumosPorId.get(l.insumoId);
     if (!insumo) return soma;
     return soma + Number(l.quantidadeUsada || 0) * Number(insumo.custoUnitarioAtual);
   }, 0);
 
+  const custoPorUnidadeDireto = linhas.reduce((soma, l) => {
+    if (!l.porUnidade) return soma;
+    const insumo = insumosPorId.get(l.insumoId);
+    if (!insumo) return soma;
+    return soma + Number(l.quantidadeUsada || 0) * Number(insumo.custoUnitarioAtual);
+  }, 0);
+
+  const temItemPorPeso = linhas.some((l) => !l.porUnidade);
   const pesoDefinido = Number(produto.pesoUnidadeGramas) > 0;
-  const custoPorUnidadeCalculado = pesoDefinido
-    ? (custoPorKgCalculado * Number(produto.pesoUnidadeGramas)) / 1000
-    : 0;
+  const custoPorUnidadeCalculado =
+    (pesoDefinido ? (custoPorKgCalculado * Number(produto.pesoUnidadeGramas)) / 1000 : 0) + custoPorUnidadeDireto;
 
   const margem = Number(produto.precoVenda) - Number(produto.custoMedio);
   const margemReal = Number(produto.precoVenda) - produto.custoUnitarioCompleto;
@@ -171,13 +191,15 @@ export function ProdutoDetailPage() {
         <p className="mb-3 text-xs text-slate-500">
           As quantidades abaixo são por 1kg (1000g) de massa produzida, não por unidade — assim,
           trocar de molde é só atualizar o "Peso por unidade" no cadastro do produto, sem
-          recadastrar a receita.
+          recadastrar a receita. Marque "Por unidade" num item (ex: embalagem/frasco) pra contar
+          o custo dele direto por unidade vendida, sem escalar pelo peso — frasco custa o mesmo
+          independente do peso do produto.
         </p>
 
-        {!pesoDefinido && (
+        {temItemPorPeso && !pesoDefinido && (
           <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
             Defina o "Peso por unidade (g)" no cadastro do produto (botão Editar) antes de
-            salvar a receita.
+            salvar um item por kg de massa.
           </div>
         )}
 
@@ -197,16 +219,17 @@ export function ProdutoDetailPage() {
             <thead className="bg-slate-50 text-slate-600">
               <tr>
                 <th className="px-4 py-2 font-medium">Insumo</th>
-                <th className="px-4 py-2 font-medium">Quantidade (por kg de massa)</th>
+                <th className="px-4 py-2 font-medium">Quantidade</th>
+                <th className="px-4 py-2 font-medium">Por unidade?</th>
                 <th className="px-4 py-2 font-medium">Custo unitário do insumo</th>
-                <th className="px-4 py-2 font-medium">Subtotal (por kg)</th>
+                <th className="px-4 py-2 font-medium">Subtotal</th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {linhas.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
                     Nenhum insumo na receita ainda
                   </td>
                 </tr>
@@ -228,7 +251,16 @@ export function ProdutoDetailPage() {
                         onChange={(e) => atualizarQuantidade(linha.insumoId, e.target.value)}
                         className="w-24 rounded border border-slate-300 px-2 py-1"
                       />
-                      <span className="ml-1 text-slate-500">{insumo?.unidadeMedida}</span>
+                      <span className="ml-1 text-slate-500">
+                        {linha.porUnidade ? "un" : insumo?.unidadeMedida}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={linha.porUnidade}
+                        onChange={(e) => atualizarPorUnidade(linha.insumoId, e.target.checked)}
+                      />
                     </td>
                     <td className="px-4 py-2">R$ {Number(insumo?.custoUnitarioAtual ?? 0).toFixed(4)}</td>
                     <td className="px-4 py-2">R$ {subtotal.toFixed(4)}</td>
@@ -256,13 +288,21 @@ export function ProdutoDetailPage() {
               ))}
           </Select>
           <Input
-            label="Quantidade por kg de massa"
+            label={novoPorUnidade ? "Quantidade por unidade" : "Quantidade por kg de massa"}
             type="number"
             step="any"
             min="0"
             value={novaQuantidade}
             onChange={(e) => setNovaQuantidade(e.target.value)}
           />
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={novoPorUnidade}
+              onChange={(e) => setNovoPorUnidade(e.target.checked)}
+            />
+            Por unidade (ex: embalagem)
+          </label>
           <Button type="button" variant="secondary" onClick={adicionarLinha}>
             Adicionar
           </Button>
@@ -276,7 +316,7 @@ export function ProdutoDetailPage() {
           </p>
           <Button
             onClick={salvar}
-            disabled={salvarReceita.isPending || (linhas.length > 0 && !pesoDefinido)}
+            disabled={salvarReceita.isPending || (temItemPorPeso && !pesoDefinido)}
           >
             {salvarReceita.isPending ? "Salvando..." : "Salvar receita"}
           </Button>

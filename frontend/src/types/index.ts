@@ -48,6 +48,7 @@ export interface ProdutoInsumoItem {
   produtoId: number;
   insumoId: number;
   quantidadeUsada: string;
+  porUnidade: boolean;
   insumo: Insumo;
 }
 
