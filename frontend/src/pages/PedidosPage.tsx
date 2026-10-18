@@ -93,6 +93,14 @@ export function PedidosPage() {
           emptyMessage="Nenhum pedido encontrado para esse filtro"
           columns={[
             {
+              header: "Código",
+              render: (row) => (
+                <Link to={`/admin/pedidos/${row.id}`} className="font-medium text-emerald-700 hover:underline">
+                  #{row.id}
+                </Link>
+              ),
+            },
+            {
               header: "Data",
               render: (row) => (
                 <Link to={`/admin/pedidos/${row.id}`} className="font-medium text-emerald-700 hover:underline">

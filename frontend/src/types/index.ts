@@ -203,6 +203,7 @@ export interface PedidoPendenteAlerta {
   valorTotal: string;
   dataPedido: string;
   cliente: { nome: string } | null;
+  nomeComprador: string | null;
 }
 
 export interface Alertas {

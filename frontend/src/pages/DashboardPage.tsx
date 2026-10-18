@@ -4,6 +4,7 @@ import { useAlertas, useMediaVendas, useProdutosMaisVendidos, useRelatorio } fro
 import { Input } from "../components/ui/Input";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
 import { ApiError } from "../lib/api";
+import type { PedidoPendenteAlerta } from "../types";
 
 const DESDE_O_INICIO_DE = "2000-01-01";
 
@@ -381,13 +382,7 @@ function AlertasBlock({
 }: {
   despesasVencidas: { id: number; descricao: string; valor: string; dataVencimento: string | null; dataDespesa: string }[];
   insumosAbaixoDoMinimo: { id: number; nome: string; unidadeMedida: string; estoqueAtual: string; estoqueMinimo: string | null }[];
-  pedidosPendentes: {
-    id: number;
-    valorTotal: string;
-    dataPedido: string;
-    cliente: { nome: string } | null;
-    nomeComprador: string | null;
-  }[];
+  pedidosPendentes: PedidoPendenteAlerta[];
 }) {
   const semAlertas =
     despesasVencidas.length === 0 && insumosAbaixoDoMinimo.length === 0 && pedidosPendentes.length === 0;
