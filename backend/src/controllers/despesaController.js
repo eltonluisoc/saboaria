@@ -6,6 +6,7 @@ const {
   sincronizarOcorrenciasFuturasDaOrigem,
 } = require("../services/despesaService");
 const { gerarParcelasPendentes: gerarParcelasProLaborePendentes } = require("../services/proLaboreService");
+const { recalcularCustoInsumo, recalcularCustoProduto } = require("../services/custoService");
 
 function parseId(param) {
   const id = Number(param);
@@ -86,10 +87,94 @@ function validarDespesaBody(body, { partial = false } = {}) {
   return null;
 }
 
+function validarEmbalagemBody(body) {
+  const { produtoId, quantidadeEmbalagens, recorrente } = body || {};
+  const pid = Number(produtoId);
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return "Campo 'produtoId' e obrigatorio quando 'ehEmbalagem' e true";
+  }
+  const qtd = Number(quantidadeEmbalagens);
+  if (!Number.isFinite(qtd) || qtd <= 0) {
+    return "Campo 'quantidadeEmbalagens' deve ser um numero maior que zero";
+  }
+  if (recorrente === true) {
+    return "Despesa de embalagem nao pode ser recorrente";
+  }
+  return null;
+}
+
+// Cria o insumo (reaproveitando por nome - comprar a mesma embalagem de
+// novo soma na media ponderada em vez de duplicar), registra a compra,
+// garante a linha na receita do produto (porUnidade=true, ja que
+// embalagem custa o mesmo independente do peso do produto) e cria a
+// despesa ja vinculada - mesmo formato que insumoController.registrarCompra
+// gera pra qualquer insumo, entao entra em "Despesas pagas"/Lucro uma
+// unica vez e fica protegida pela mesma trava de editar/remover abaixo.
+async function criarDespesaEmbalagem(req, res) {
+  const { descricao, valor, dataDespesa, dataVencimento, formaPagamento, produtoId, quantidadeEmbalagens } = req.body;
+
+  const produto = await prisma.produto.findUnique({ where: { id: Number(produtoId) } });
+  if (!produto) {
+    return res.status(404).json({ error: "Produto nao encontrado" });
+  }
+
+  const nomeInsumo = descricao.trim();
+  const quantidade = Number(quantidadeEmbalagens);
+  const precoUnitario = new Prisma.Decimal(valor).dividedBy(quantidade);
+  const dataCompra = new Date(dataDespesa);
+
+  const despesa = await prisma.$transaction(async (tx) => {
+    let insumo = await tx.insumo.findFirst({ where: { nome: nomeInsumo } });
+    if (!insumo) {
+      insumo = await tx.insumo.create({ data: { nome: nomeInsumo, unidadeMedida: "un" } });
+    }
+
+    const compra = await tx.compraInsumo.create({
+      data: { insumoId: insumo.id, quantidade, precoUnitario, dataCompra },
+    });
+    await tx.insumo.update({ where: { id: insumo.id }, data: { estoqueAtual: { increment: quantidade } } });
+    await recalcularCustoInsumo(tx, insumo.id);
+
+    const receitaExistente = await tx.produtoInsumo.findUnique({
+      where: { produtoId_insumoId: { produtoId: produto.id, insumoId: insumo.id } },
+    });
+    if (!receitaExistente) {
+      await tx.produtoInsumo.create({
+        data: { produtoId: produto.id, insumoId: insumo.id, quantidadeUsada: 1, porUnidade: true },
+      });
+    }
+    await recalcularCustoProduto(tx, produto.id);
+
+    return tx.despesaGeral.create({
+      data: {
+        descricao: nomeInsumo,
+        formaPagamento: formaPagamento ? formaPagamento.trim() : null,
+        valor,
+        categoria: "Compra de insumo",
+        dataDespesa: dataCompra,
+        dataVencimento: dataVencimento ? new Date(dataVencimento) : null,
+        pago: true,
+        dataPagamento: dataCompra,
+        compraInsumoId: compra.id,
+      },
+    });
+  });
+
+  return res.status(201).json(despesa);
+}
+
 async function criar(req, res) {
   const erro = validarDespesaBody(req.body);
   if (erro) {
     return res.status(400).json({ error: erro });
+  }
+
+  if (req.body?.ehEmbalagem === true) {
+    const erroEmbalagem = validarEmbalagemBody(req.body);
+    if (erroEmbalagem) {
+      return res.status(400).json({ error: erroEmbalagem });
+    }
+    return criarDespesaEmbalagem(req, res);
   }
 
   const { descricao, valor, categoria, dataDespesa, recorrente, dataFimRecorrencia, dataVencimento, formaPagamento } =

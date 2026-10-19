@@ -24,6 +24,9 @@ export interface DespesaInput {
   dataFimRecorrencia?: string | null;
   dataVencimento?: string | null;
   formaPagamento?: string | null;
+  ehEmbalagem?: boolean;
+  produtoId?: number;
+  quantidadeEmbalagens?: number;
 }
 
 export interface DespesaParceladaInput {
@@ -39,7 +42,10 @@ export function useCriarDespesa() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: DespesaInput) => api.post<DespesaGeral>("/api/admin/despesas", data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["despesas"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["despesas"] });
+      qc.invalidateQueries({ queryKey: ["produtos"] });
+    },
   });
 }
 

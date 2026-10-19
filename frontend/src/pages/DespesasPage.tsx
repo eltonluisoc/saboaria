@@ -9,8 +9,9 @@ import {
   useMarcarDespesaPaga,
   useRemoverDespesa,
 } from "../hooks/useDespesas";
+import { useProdutos } from "../hooks/useProdutos";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
+import { Input, Select } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { Table } from "../components/ui/Table";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
@@ -548,7 +549,12 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
   const [formaPagamento, setFormaPagamento] = useState(despesa?.formaPagamento ?? "");
   const [parcelado, setParcelado] = useState(false);
   const [numeroParcelas, setNumeroParcelas] = useState("2");
+  const [ehEmbalagem, setEhEmbalagem] = useState(false);
+  const [produtoIdEmbalagem, setProdutoIdEmbalagem] = useState("");
+  const [quantidadeEmbalagens, setQuantidadeEmbalagens] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { data: produtos } = useProdutos();
+  const produtosParaEmbalagem = (produtos ?? []).filter((p) => p.ativo && !p.ehKit);
   const criar = useCriarDespesa();
   const editar = useEditarDespesa(despesa?.id ?? 0);
   const criarParcelada = useCriarDespesaParcelada();
@@ -597,6 +603,13 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
               recorrente,
               dataFimRecorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
             }),
+        ...(!despesa && ehEmbalagem
+          ? {
+              ehEmbalagem: true,
+              produtoId: Number(produtoIdEmbalagem),
+              quantidadeEmbalagens: Number(quantidadeEmbalagens),
+            }
+          : {}),
       };
       if (despesa) {
         await editar.mutateAsync(dados);
@@ -623,7 +636,9 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
           onChange={(e) => setValor(e.target.value)}
           required
         />
-        <Input label="Categoria (opcional)" value={categoria ?? ""} onChange={(e) => setCategoria(e.target.value)} />
+        {!(!despesa && ehEmbalagem) && (
+          <Input label="Categoria (opcional)" value={categoria ?? ""} onChange={(e) => setCategoria(e.target.value)} />
+        )}
         <Input
           label="Data"
           type="date"
@@ -646,7 +661,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
             ))}
           </select>
         </label>
-        {!despesa && (
+        {!despesa && !ehEmbalagem && (
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -655,6 +670,47 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
             />
             Parcelado no cartão
           </label>
+        )}
+        {!despesa && !parcelado && (
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={ehEmbalagem}
+              onChange={(e) => setEhEmbalagem(e.target.checked)}
+            />
+            É embalagem? (vincula direto num produto, sem precisar cadastrar insumo à parte)
+          </label>
+        )}
+        {ehEmbalagem && !parcelado && (
+          <>
+            <Select
+              label="Produto"
+              value={produtoIdEmbalagem}
+              onChange={(e) => setProdutoIdEmbalagem(e.target.value)}
+              required
+            >
+              <option value="">Selecione...</option>
+              {produtosParaEmbalagem.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </Select>
+            <Input
+              label="Quantidade de embalagens compradas"
+              type="number"
+              step="any"
+              min="0"
+              value={quantidadeEmbalagens}
+              onChange={(e) => setQuantidadeEmbalagens(e.target.value)}
+              required
+            />
+            <p className="rounded-md bg-slate-50 p-3 text-xs text-slate-500">
+              O valor da despesa é dividido pela quantidade acima e entra automaticamente no custo
+              desse produto (por unidade, sem escalar pelo peso) — não precisa cadastrar o insumo
+              nem a receita à parte.
+            </p>
+          </>
         )}
         {parcelado ? (
           <Input
@@ -675,7 +731,7 @@ function DespesaFormModal({ despesa, onClose }: { despesa: DespesaGeral | null; 
               value={dataVencimento}
               onChange={(e) => setDataVencimento(e.target.value)}
             />
-            {ehCopiaDeRecorrencia ? (
+            {ehEmbalagem ? null : ehCopiaDeRecorrencia ? (
               <p className="rounded-md bg-slate-50 p-3 text-xs text-slate-500">
                 Esta despesa é uma ocorrência gerada por uma recorrência. Editar aqui só muda este mês — pra mudar a
                 recorrência em si (valor das próximas parcelas ou data de fim), edite a despesa original.
