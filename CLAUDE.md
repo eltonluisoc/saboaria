@@ -1,7 +1,7 @@
-# Projeto: Saboraria (sistema de gestão + loja online)
+# Projeto: Saboaria (sistema de gestão + loja online)
 
 ## Contexto
-Sistema completo para uma saboraria (produção artesanal de sabonetes): gestão de
+Sistema completo para uma saboaria (produção artesanal de sabonetes): gestão de
 insumos, produtos, despesas, vendas, e uma loja online com pagamento real.
 Uso pessoal do dono (admin único) + clientes comprando pelo site.
 

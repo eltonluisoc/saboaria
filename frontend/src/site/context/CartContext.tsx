@@ -14,7 +14,7 @@ interface CartContextValue {
   totalItens: number;
 }
 
-const STORAGE_KEY = "saboraria_carrinho";
+const STORAGE_KEY = "saboaria_carrinho";
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 function lerCarrinhoInicial(): CartItem[] {

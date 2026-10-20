@@ -1,4 +1,4 @@
-# Checklist de testes — Saboraria / Lud'E
+# Checklist de testes — Saboaria / Lud'E
 
 Roteiro manual de QA de ponta a ponta. Use antes de qualquer deploy
 importante ou depois de mudanças em áreas críticas (custo médio, checkout,

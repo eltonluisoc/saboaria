@@ -9,7 +9,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 export function LoginPage() {
   const { login, admin } = useAuth();
-  useDocumentTitle("Saboraria — Painel Admin");
+  useDocumentTitle("Saboaria — Painel Admin");
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -43,7 +43,7 @@ export function LoginPage() {
         className="w-full max-w-sm space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
       >
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">Saboraria</h1>
+          <h1 className="text-xl font-semibold text-slate-800">Saboaria</h1>
           <p className="text-sm text-slate-500">Painel administrativo</p>
         </div>
         {error && <ErrorBanner message={error} />}
