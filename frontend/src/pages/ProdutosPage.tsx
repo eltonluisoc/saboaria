@@ -12,6 +12,7 @@ import type { Produto } from "../types";
 export function ProdutosPage() {
   const { data: produtos, isLoading, error } = useProdutos();
   const [modalProduto, setModalProduto] = useState<Produto | null | undefined>(undefined);
+  const [produtoDetalhes, setProdutoDetalhes] = useState<Produto | null>(null);
   const remover = useRemoverProduto();
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -53,30 +54,22 @@ export function ProdutosPage() {
               ),
             },
             { header: "Preço de venda", render: (row) => `R$ ${Number(row.precoVenda).toFixed(2)}` },
-            { header: "Custo médio (insumos)", render: (row) => `R$ ${Number(row.custoMedio).toFixed(2)}` },
             {
-              header: "Custo completo (c/ rateio)",
-              render: (row) => `R$ ${row.custoUnitarioCompleto.toFixed(2)}`,
-            },
-            {
-              header: "Margem (insumos)",
-              render: (row) => {
-                const margem = Number(row.precoVenda) - Number(row.custoMedio);
-                return (
-                  <span className={margem >= 0 ? "text-emerald-700" : "text-red-700"}>
-                    R$ {margem.toFixed(2)}
-                  </span>
-                );
-              },
-            },
-            {
-              header: "Margem real (c/ rateio)",
+              header: "Margem",
               render: (row) => {
                 const margemReal = Number(row.precoVenda) - row.custoUnitarioCompleto;
                 return (
-                  <span className={`font-medium ${margemReal >= 0 ? "text-emerald-700" : "text-red-700"}`}>
-                    R$ {margemReal.toFixed(2)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-medium ${margemReal >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                      R$ {margemReal.toFixed(2)}
+                    </span>
+                    <button
+                      className="text-xs text-slate-400 hover:text-slate-600 hover:underline"
+                      onClick={() => setProdutoDetalhes(row)}
+                    >
+                      detalhes
+                    </button>
+                  </div>
                 );
               },
             },
@@ -128,7 +121,43 @@ export function ProdutosPage() {
       {modalProduto !== undefined && (
         <ProdutoFormModal produto={modalProduto} onClose={() => setModalProduto(undefined)} />
       )}
+
+      {produtoDetalhes && (
+        <DetalhesCustoModal produto={produtoDetalhes} onClose={() => setProdutoDetalhes(null)} />
+      )}
     </div>
+  );
+}
+
+function DetalhesCustoModal({ produto, onClose }: { produto: Produto; onClose: () => void }) {
+  const margemInsumos = Number(produto.precoVenda) - Number(produto.custoMedio);
+  const margemReal = Number(produto.precoVenda) - produto.custoUnitarioCompleto;
+
+  return (
+    <Modal title={`Detalhes de custo — ${produto.nome}`} onClose={onClose}>
+      <dl className="space-y-3 text-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <dt className="text-slate-500">Custo médio (insumos)</dt>
+          <dd className="font-medium text-slate-800">R$ {Number(produto.custoMedio).toFixed(2)}</dd>
+        </div>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <dt className="text-slate-500">Custo completo (c/ rateio)</dt>
+          <dd className="font-medium text-slate-800">R$ {produto.custoUnitarioCompleto.toFixed(2)}</dd>
+        </div>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <dt className="text-slate-500">Margem (insumos)</dt>
+          <dd className={margemInsumos >= 0 ? "font-medium text-emerald-700" : "font-medium text-red-700"}>
+            R$ {margemInsumos.toFixed(2)}
+          </dd>
+        </div>
+        <div className="flex items-center justify-between">
+          <dt className="text-slate-500">Margem real (c/ rateio)</dt>
+          <dd className={margemReal >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-red-700"}>
+            R$ {margemReal.toFixed(2)}
+          </dd>
+        </div>
+      </dl>
+    </Modal>
   );
 }
 
