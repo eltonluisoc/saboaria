@@ -1,5 +1,5 @@
 const prisma = require("../config/prisma");
-const { xaiApiKey, xaiModel } = require("../config/env");
+const { xaiApiKey, xaiModel, geminiApiKey, geminiModel } = require("../config/env");
 
 const FORMAS_PAGAMENTO_VALIDAS = ["Dinheiro", "Pix", "Cartão de débito", "Cartão de crédito"];
 
@@ -27,14 +27,63 @@ Devolva exatamente este formato JSON:
 Texto da venda: "${texto}"`;
 }
 
+// Provedor principal (camada gratuita, sem cartao) - Google AI Studio.
+async function chamarGemini(prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+  const resposta = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" },
+    }),
+  });
+
+  if (!resposta.ok) {
+    const corpo = await resposta.text();
+    console.error("Erro na API do Gemini:", resposta.status, corpo);
+    throw new Error("erro_api_ia");
+  }
+
+  const dados = await resposta.json();
+  return dados?.candidates?.[0]?.content?.parts?.[0]?.text;
+}
+
+// Provedor alternativo (xAI/Grok) - mantido pronto caso o credito da conta
+// seja resolvido depois; so entra em uso se GEMINI_API_KEY nao estiver
+// configurada.
+async function chamarGrok(prompt) {
+  const resposta = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${xaiApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: xaiModel,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!resposta.ok) {
+    const corpo = await resposta.text();
+    console.error("Erro na API da Grok:", resposta.status, corpo);
+    throw new Error("erro_api_ia");
+  }
+
+  const dados = await resposta.json();
+  return dados?.choices?.[0]?.message?.content;
+}
+
 async function interpretarVenda(req, res) {
   const { texto } = req.body || {};
   if (typeof texto !== "string" || !texto.trim()) {
     return res.status(400).json({ error: "Campo 'texto' e obrigatorio" });
   }
-  if (!xaiApiKey) {
+  if (!geminiApiKey && !xaiApiKey) {
     return res.status(400).json({
-      error: "XAI_API_KEY nao configurada no .env - necessario para interpretar vendas por IA",
+      error: "GEMINI_API_KEY (ou XAI_API_KEY) nao configurada no .env - necessario para interpretar vendas por IA",
     });
   }
 
@@ -43,33 +92,17 @@ async function interpretarVenda(req, res) {
     select: { id: true, nome: true, precoVenda: true },
   });
 
-  let resposta;
+  const prompt = montarPrompt(texto.trim(), produtos);
+  let conteudo;
   try {
-    resposta = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${xaiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: xaiModel,
-        messages: [{ role: "user", content: montarPrompt(texto.trim(), produtos) }],
-        response_format: { type: "json_object" },
-      }),
-    });
+    conteudo = geminiApiKey ? await chamarGemini(prompt) : await chamarGrok(prompt);
   } catch (err) {
-    console.error("Falha de rede ao chamar a API da Grok:", err);
+    if (err.message === "erro_api_ia") {
+      return res.status(502).json({ error: "Erro ao chamar a IA - tente novamente ou preencha manualmente" });
+    }
+    console.error("Falha de rede ao chamar a API de IA:", err);
     return res.status(502).json({ error: "Nao foi possivel contatar a IA agora - preencha manualmente" });
   }
-
-  if (!resposta.ok) {
-    const corpo = await resposta.text();
-    console.error("Erro na API da Grok:", resposta.status, corpo);
-    return res.status(502).json({ error: "Erro ao chamar a IA - tente novamente ou preencha manualmente" });
-  }
-
-  const dados = await resposta.json();
-  const conteudo = dados?.choices?.[0]?.message?.content;
 
   let interpretado;
   try {

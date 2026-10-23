@@ -33,5 +33,7 @@ module.exports = {
   seuRastreioWebhookSecret: process.env.SEURASTREIO_WEBHOOK_SECRET || null,
   freteFixo: Number(process.env.FRETE_FIXO) || 25,
   xaiApiKey: process.env.XAI_API_KEY || null,
-  xaiModel: process.env.XAI_MODEL || "grok-4-fast",
+  xaiModel: process.env.XAI_MODEL || "grok-4.7",
+  geminiApiKey: process.env.GEMINI_API_KEY || null,
+  geminiModel: process.env.GEMINI_MODEL || "gemini-3.8-flash",
 };
