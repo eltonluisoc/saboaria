@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { usePedidos } from "../hooks/usePedidos";
 import { useProdutos } from "../hooks/useProdutos";
 import { useRegistrarVenda } from "../hooks/useVendas";
+import { useInterpretarVenda } from "../hooks/useIa";
 import { Button } from "../components/ui/Button";
 import { Input, Select } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
@@ -170,6 +171,7 @@ const FORMAS_PAGAMENTO = ["Dinheiro", "Pix", "Cartão de débito", "Cartão de c
 function RegistrarVendaModal({ onClose }: { onClose: () => void }) {
   const { data: produtos } = useProdutos();
   const registrarVenda = useRegistrarVenda();
+  const interpretarVenda = useInterpretarVenda();
 
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
@@ -178,8 +180,26 @@ function RegistrarVendaModal({ onClose }: { onClose: () => void }) {
   const [jaRecebeuPagamento, setJaRecebeuPagamento] = useState(true);
   const [nomeComprador, setNomeComprador] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [textoIa, setTextoIa] = useState("");
+  const [avisosIa, setAvisosIa] = useState<string[]>([]);
 
   const produtosPorId = new Map((produtos ?? []).map((p) => [p.id, p]));
+
+  async function handleInterpretar() {
+    if (!textoIa.trim()) return;
+    setFormError(null);
+    setAvisosIa([]);
+    try {
+      const resultado = await interpretarVenda.mutateAsync(textoIa.trim());
+      setCarrinho(resultado.itens);
+      if (resultado.nomeComprador) setNomeComprador(resultado.nomeComprador);
+      if (resultado.formaPagamento) setFormaPagamento(resultado.formaPagamento);
+      setJaRecebeuPagamento(resultado.status === "pago");
+      setAvisosIa(resultado.avisos);
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : "Erro ao interpretar o texto com IA");
+    }
+  }
 
   function adicionarAoCarrinho() {
     if (!produtoSelecionado || !quantidadeSelecionada) return;
@@ -222,6 +242,36 @@ function RegistrarVendaModal({ onClose }: { onClose: () => void }) {
     <Modal title="Registrar venda" onClose={onClose}>
       <div className="space-y-4">
         {formError && <ErrorBanner message={formError} />}
+
+        <div className="space-y-2 rounded-md border border-indigo-200 bg-indigo-50 p-3">
+          <label className="block text-sm font-medium text-indigo-900">
+            Descreva a venda (opcional) — ex: "vendi 2 sabonetes de alecrim pro cliente Carlos, pagamento feito"
+          </label>
+          <textarea
+            className="w-full rounded-md border border-indigo-300 px-3 py-2 text-sm"
+            rows={2}
+            value={textoIa}
+            onChange={(e) => setTextoIa(e.target.value)}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleInterpretar}
+            disabled={interpretarVenda.isPending || !textoIa.trim()}
+          >
+            {interpretarVenda.isPending ? "Interpretando..." : "Interpretar com IA"}
+          </Button>
+          {avisosIa.length > 0 && (
+            <ul className="list-disc space-y-0.5 pl-5 text-xs text-amber-700">
+              {avisosIa.map((aviso, i) => (
+                <li key={i}>{aviso}</li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-indigo-700/70">
+            A IA só preenche os campos abaixo — confira tudo antes de clicar em "Registrar venda".
+          </p>
+        </div>
 
         <div className="flex flex-wrap items-end gap-3">
           <Select label="Produto" value={produtoSelecionado} onChange={(e) => setProdutoSelecionado(e.target.value)}>

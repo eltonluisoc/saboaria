@@ -32,4 +32,6 @@ module.exports = {
   seuRastreioApiKey: process.env.SEURASTREIO_API_KEY || null,
   seuRastreioWebhookSecret: process.env.SEURASTREIO_WEBHOOK_SECRET || null,
   freteFixo: Number(process.env.FRETE_FIXO) || 25,
+  xaiApiKey: process.env.XAI_API_KEY || null,
+  xaiModel: process.env.XAI_MODEL || "grok-4-fast",
 };
