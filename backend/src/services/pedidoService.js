@@ -40,19 +40,27 @@ async function criarPedidoComItens(
     valorFrete = 0,
     formaEntrega = null,
     nomeComprador = null,
+    descontoPercentual = 0,
   }
 ) {
+  // Desconto (ex: 5% por cliente logado) e aplicado direto no preco de
+  // cada item, proporcional - assim valorTotal ja sai certo e os itens
+  // que viram a preference do Mercado Pago (checkoutController.js) ja
+  // cobram o valor com desconto, sem precisar de nenhum ajuste la.
+  const fatorDesconto = new Prisma.Decimal(1).minus(new Prisma.Decimal(descontoPercentual).dividedBy(100));
+
   let valorItens = new Prisma.Decimal(0);
   const itensData = itens.map((item) => {
     const produto = produtosPorId.get(Number(item.produtoId));
     const quantidade = Number(item.quantidade);
-    const subtotal = produto.precoVenda.times(quantidade);
+    const precoUnitario = produto.precoVenda.times(fatorDesconto);
+    const subtotal = precoUnitario.times(quantidade);
     valorItens = valorItens.plus(subtotal);
 
     return {
       produtoId: produto.id,
       quantidade,
-      precoUnitario: produto.precoVenda,
+      precoUnitario,
       subtotal,
     };
   });
@@ -66,6 +74,7 @@ async function criarPedidoComItens(
       status,
       valorTotal,
       valorFrete,
+      descontoPercentual,
       formaEntrega,
       nomeComprador,
       formaPagamento: formaPagamento || null,

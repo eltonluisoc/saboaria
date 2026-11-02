@@ -4,6 +4,7 @@ import { ProductCard } from "../components/ProductCard";
 import { Loading } from "../components/Loading";
 import { useCatalogo } from "../hooks/useCatalogo";
 import { useCart } from "../context/CartContext";
+import { useClienteAuth } from "../context/ClienteAuthContext";
 
 function formatarPreco(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -16,6 +17,7 @@ type Ordenacao = "relevancia" | "menor-preco" | "maior-preco";
 export function CatalogoPage() {
   const { data: produtos, isLoading, error } = useCatalogo();
   const { itens, totalItens } = useCart();
+  const { cliente, loading: carregandoCliente } = useClienteAuth();
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null);
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("relevancia");
@@ -57,6 +59,15 @@ export function CatalogoPage() {
         <h1 className="font-serif-brand text-4xl text-brand-dark">Catálogo</h1>
         <p className="mt-2 text-sm text-brand-brown/70">Rituais artesanais para o banho, a casa e o dia a dia</p>
       </div>
+
+      {!carregandoCliente && !cliente && (
+        <Link
+          to="/cadastro"
+          className="mb-8 block rounded-lg border border-brand-gold/40 bg-brand-gold/10 px-5 py-3 text-center text-sm text-brand-dark transition-colors hover:bg-brand-gold/20"
+        >
+          <strong className="font-semibold">Crie sua conta e ganhe 5% de desconto</strong> em todas as compras
+        </Link>
+      )}
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <input

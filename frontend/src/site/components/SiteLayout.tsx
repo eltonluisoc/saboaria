@@ -1,7 +1,8 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useCart } from "../context/CartContext";
 import { useCatalogo } from "../hooks/useCatalogo";
+import { useClienteAuth } from "../context/ClienteAuthContext";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 const VALORES = ["Artesanal", "Natural", "Ancestral", "Sustentável", "Feito com amor"];
@@ -24,7 +25,14 @@ export function SiteLayout() {
   const { totalItens } = useCart();
   const { data: produtos } = useCatalogo();
   const produtoEmBreve = produtos?.find((p) => p.emBreve);
+  const { cliente, logout, loading: carregandoCliente } = useClienteAuth();
+  const navigate = useNavigate();
   useDocumentTitle("Lud'E — Rituais & Ancestralidade");
+
+  async function handleLogout() {
+    await logout();
+    navigate("/");
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-brand-cream font-sans-brand text-brand-brown">
@@ -67,6 +75,25 @@ export function SiteLayout() {
             >
               Saiba mais
             </NavLink>
+            {!carregandoCliente &&
+              (cliente ? (
+                <button
+                  onClick={handleLogout}
+                  className="-mx-2 rounded px-2 py-2 hover:text-brand-gold"
+                  title={cliente.email}
+                >
+                  Olá, {cliente.nome.split(" ")[0]} · Sair
+                </button>
+              ) : (
+                <NavLink
+                  to="/entrar"
+                  className={({ isActive }) =>
+                    `-mx-2 rounded px-2 py-2 ${isActive ? "text-brand-gold" : "hover:text-brand-gold"}`
+                  }
+                >
+                  Entrar
+                </NavLink>
+              ))}
             <Link to="/carrinho" className="-m-2 flex items-center gap-1 p-2 hover:text-brand-gold">
               <span className="relative flex items-center">
                 <CartIcon />

@@ -16,6 +16,7 @@ const checkoutRoutes = require("./routes/checkoutRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const rastreioPublicoRoutes = require("./routes/rastreioPublicoRoutes");
 const iaRoutes = require("./routes/iaRoutes");
+const clienteRoutes = require("./routes/clienteRoutes");
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/pedidos-publico", rastreioPublicoRoutes);
 app.use("/api/admin/ia", iaRoutes);
+app.use("/api/clientes", clienteRoutes);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

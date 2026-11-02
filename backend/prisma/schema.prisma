@@ -186,15 +186,19 @@ model ProLabore {
 }
 
 model Cliente {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  email     String   @unique
-  telefone  String?
-  endereco  String?
-  cidade    String?
-  estado    String?
-  cep       String?
-  createdAt DateTime @default(now()) @map("created_at")
+  id              Int      @id @default(autoincrement())
+  nome            String
+  email           String   @unique
+  telefone        String?
+  endereco        String?
+  cidade          String?
+  estado          String?
+  cep             String?
+  // Nulo = conta "visitante" (criada so por ja ter comprado sem logar) -
+  // vira conta de verdade quando a pessoa se cadastra com o mesmo email.
+  senhaHash       String?  @map("senha_hash")
+  aceitaMarketing Boolean  @default(false) @map("aceita_marketing")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   pedidos Pedido[]
 
@@ -208,6 +212,9 @@ model Pedido {
   status               String   @default("pendente")
   valorTotal           Decimal  @map("valor_total") @db.Decimal(12, 2)
   valorFrete           Decimal  @default(0) @map("valor_frete") @db.Decimal(12, 2)
+  // Desconto de verdade aplicado nesse pedido (ex: 5 = 5% por cliente
+  // logado) - registro historico do que foi aplicado, nao uma config.
+  descontoPercentual   Decimal? @default(0) @map("desconto_percentual") @db.Decimal(5, 2)
   formaEntrega         String?  @map("forma_entrega")
   freteAbonadoMotivo   String?  @map("frete_abonado_motivo")
   nomeComprador        String?  @map("nome_comprador")

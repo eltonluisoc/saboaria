@@ -4,6 +4,7 @@ const { criarPedidoComItens, confirmarPagamento } = require("../services/pedidoS
 const { frontendUrl, backendUrl, nodeEnv, freteFixo } = require("../config/env");
 
 const FORMAS_ENTREGA_VALIDAS = ["envio", "retirada"];
+const DESCONTO_CLIENTE_LOGADO = 5;
 
 function validarCheckoutBody(body) {
   const { itens, cliente, formaEntrega } = body || {};
@@ -73,23 +74,36 @@ async function criar(req, res) {
     });
   }
 
-  const email = dadosCliente.email.trim().toLowerCase();
-  const cliente = await prisma.cliente.upsert({
-    where: { email },
-    update: {
-      nome: dadosCliente.nome.trim(),
-      telefone: dadosCliente.telefone ? dadosCliente.telefone.trim() : null,
-      endereco: dadosCliente.endereco.trim(),
-    },
-    create: {
-      nome: dadosCliente.nome.trim(),
-      email,
-      telefone: dadosCliente.telefone ? dadosCliente.telefone.trim() : null,
-      endereco: dadosCliente.endereco.trim(),
-    },
-  });
+  // Cliente logado (cookie opcional, checkoutRoutes.js): atualiza a conta
+  // ja existente em vez de upsert por email - nao deixa o checkout trocar
+  // o email de login, so os dados de entrega. Sem login, continua o
+  // upsert por email de sempre (visitante nunca fica bloqueado).
+  const cliente = req.cliente
+    ? await prisma.cliente.update({
+        where: { id: req.cliente.id },
+        data: {
+          nome: dadosCliente.nome.trim(),
+          telefone: dadosCliente.telefone ? dadosCliente.telefone.trim() : null,
+          endereco: dadosCliente.endereco.trim(),
+        },
+      })
+    : await prisma.cliente.upsert({
+        where: { email: dadosCliente.email.trim().toLowerCase() },
+        update: {
+          nome: dadosCliente.nome.trim(),
+          telefone: dadosCliente.telefone ? dadosCliente.telefone.trim() : null,
+          endereco: dadosCliente.endereco.trim(),
+        },
+        create: {
+          nome: dadosCliente.nome.trim(),
+          email: dadosCliente.email.trim().toLowerCase(),
+          telefone: dadosCliente.telefone ? dadosCliente.telefone.trim() : null,
+          endereco: dadosCliente.endereco.trim(),
+        },
+      });
 
   const valorFreteAplicado = formaEntrega === "retirada" ? 0 : freteFixo;
+  const descontoPercentual = req.cliente ? DESCONTO_CLIENTE_LOGADO : 0;
 
   const pedido = await prisma.$transaction((tx) =>
     criarPedidoComItens(tx, {
@@ -101,6 +115,7 @@ async function criar(req, res) {
       produtosPorId,
       valorFrete: valorFreteAplicado,
       formaEntrega,
+      descontoPercentual,
     })
   );
 

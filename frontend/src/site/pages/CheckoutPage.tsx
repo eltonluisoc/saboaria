@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCatalogo, type ProdutoPublico } from "../hooks/useCatalogo";
 import { useCriarCheckout, useFreteFixo, type FormaEntrega } from "../hooks/useCheckout";
+import { useClienteAuth } from "../context/ClienteAuthContext";
 import { Loading } from "../components/Loading";
 import { ApiError } from "../../lib/api";
+
+const DESCONTO_CLIENTE_LOGADO = 0.05;
 
 function formatarPreco(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -14,6 +17,7 @@ export function CheckoutPage() {
   const { itens } = useCart();
   const { data: produtos, isLoading } = useCatalogo();
   const { data: freteInfo, isLoading: isLoadingFrete } = useFreteFixo();
+  const { cliente, loading: carregandoCliente } = useClienteAuth();
   const criarCheckout = useCriarCheckout();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -21,8 +25,17 @@ export function CheckoutPage() {
   const [endereco, setEndereco] = useState("");
   const [formaEntrega, setFormaEntrega] = useState<FormaEntrega>("envio");
   const [erro, setErro] = useState<string | null>(null);
+  const [camposPreenchidos, setCamposPreenchidos] = useState(false);
 
-  if (isLoading || isLoadingFrete) return <Loading />;
+  if (isLoading || isLoadingFrete || carregandoCliente) return <Loading />;
+
+  // So preenche uma vez, quando o cliente logado chega - depois disso a
+  // pessoa pode editar nome/telefone livremente sem o campo ser resetado.
+  if (cliente && !camposPreenchidos) {
+    setNome(cliente.nome);
+    setEmail(cliente.email);
+    setCamposPreenchidos(true);
+  }
 
   const produtosPorId = new Map((produtos ?? []).map((p) => [p.id, p]));
   const linhas: { quantidade: number; produto: ProdutoPublico }[] = [];
@@ -31,9 +44,10 @@ export function CheckoutPage() {
     if (produto) linhas.push({ quantidade: item.quantidade, produto });
   }
   const subtotalProdutos = linhas.reduce((soma, l) => soma + Number(l.produto.precoVenda) * l.quantidade, 0);
+  const desconto = cliente ? subtotalProdutos * DESCONTO_CLIENTE_LOGADO : 0;
   const freteFixo = freteInfo?.valorFrete ?? 0;
   const frete = formaEntrega === "envio" ? freteFixo : 0;
-  const total = subtotalProdutos + frete;
+  const total = subtotalProdutos - desconto + frete;
 
   if (linhas.length === 0) {
     return (
@@ -80,13 +94,22 @@ export function CheckoutPage() {
               required
             />
             <input
-              className="w-full rounded-md border border-brand-olive/30 bg-white px-4 py-2 text-sm text-brand-brown outline-none focus:border-brand-gold"
+              className="w-full rounded-md border border-brand-olive/30 bg-white px-4 py-2 text-sm text-brand-brown outline-none focus:border-brand-gold disabled:bg-brand-cream disabled:text-brand-brown/60"
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={!!cliente}
               required
             />
+            {!cliente && (
+              <p className="-mt-2 text-xs text-brand-brown/70">
+                Já tem conta?{" "}
+                <Link to="/entrar" className="font-medium text-brand-olive hover:text-brand-gold">
+                  Entre e ganhe 5% de desconto
+                </Link>
+              </p>
+            )}
             <input
               className="w-full rounded-md border border-brand-olive/30 bg-white px-4 py-2 text-sm text-brand-brown outline-none focus:border-brand-gold"
               placeholder="Telefone"
@@ -144,6 +167,12 @@ export function CheckoutPage() {
                 <span className="font-medium">{formatarPreco(Number(produto.precoVenda) * quantidade)}</span>
               </div>
             ))}
+            {cliente && (
+              <div className="flex justify-between px-4 py-3 text-sm text-emerald-700">
+                <span>Desconto de cliente cadastrado (5%)</span>
+                <span className="font-medium">− {formatarPreco(desconto)}</span>
+              </div>
+            )}
             {formaEntrega === "envio" && (
               <div className="flex justify-between px-4 py-3 text-sm">
                 <span>Frete</span>

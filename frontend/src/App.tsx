@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { Spinner } from "./components/ui/Spinner";
 import { CartProvider } from "./site/context/CartContext";
+import { ClienteAuthProvider } from "./site/context/ClienteAuthContext";
 import { SiteLayout } from "./site/components/SiteLayout";
 import { HomePage } from "./site/pages/HomePage";
 import { SaibaMaisPage } from "./site/pages/SaibaMaisPage";
@@ -13,6 +14,8 @@ import { CarrinhoPage } from "./site/pages/CarrinhoPage";
 import { CheckoutPage } from "./site/pages/CheckoutPage";
 import { CheckoutRetornoPage } from "./site/pages/CheckoutRetornoPage";
 import { PedidoAcompanhamentoPage } from "./site/pages/PedidoAcompanhamentoPage";
+import { LoginClientePage } from "./site/pages/LoginClientePage";
+import { CadastroClientePage } from "./site/pages/CadastroClientePage";
 
 // Paginas do admin carregam sob demanda - quem visita a loja nunca baixa
 // esse codigo, so quem realmente acessa /admin.
@@ -50,6 +53,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ClienteAuthProvider>
         <CartProvider>
           <Routes>
             {/* site público */}
@@ -62,6 +66,8 @@ export default function App() {
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/checkout/retorno" element={<CheckoutRetornoPage />} />
               <Route path="/pedido/:codigoAcesso" element={<PedidoAcompanhamentoPage />} />
+              <Route path="/entrar" element={<LoginClientePage />} />
+              <Route path="/cadastro" element={<CadastroClientePage />} />
             </Route>
 
             {/* painel admin */}
@@ -91,6 +97,7 @@ export default function App() {
             </Route>
           </Routes>
         </CartProvider>
+        </ClienteAuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
