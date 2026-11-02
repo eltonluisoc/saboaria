@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useCatalogo } from "../hooks/useCatalogo";
 import { useClienteAuth } from "../context/ClienteAuthContext";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { WhatsAppButton } from "./WhatsAppButton";
 
 const VALORES = ["Artesanal", "Natural", "Ancestral", "Sustentável", "Feito com amor"];
 
@@ -118,9 +119,14 @@ export function SiteLayout() {
               <span key={v}>{v}</span>
             ))}
           </div>
+          <Link to="/politica-de-trocas" className="text-xs text-brand-cream/60 hover:text-brand-gold">
+            Política de troca
+          </Link>
           <p className="text-xs text-brand-cream/50">© {new Date().getFullYear()} Lud&apos;E Saboaria Artesanal</p>
         </div>
       </footer>
+
+      <WhatsAppButton />
     </div>
   );
 }

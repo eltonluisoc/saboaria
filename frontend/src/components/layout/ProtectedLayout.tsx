@@ -12,6 +12,7 @@ const links = [
   { to: "/admin/pro-labore", label: "Pró-labore" },
   { to: "/admin/pedidos", label: "Pedidos" },
   { to: "/admin/lotes", label: "Lotes de Produção" },
+  { to: "/admin/cupons", label: "Cupons" },
 ];
 
 function MenuIcon() {

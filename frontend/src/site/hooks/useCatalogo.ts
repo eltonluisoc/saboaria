@@ -10,6 +10,7 @@ export interface ProdutoPublico {
   emBreve: boolean;
   ehKit: boolean;
   categoria: string | null;
+  maisVendido: boolean;
 }
 
 export function useCatalogo() {

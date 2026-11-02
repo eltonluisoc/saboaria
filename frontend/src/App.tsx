@@ -16,6 +16,7 @@ import { CheckoutRetornoPage } from "./site/pages/CheckoutRetornoPage";
 import { PedidoAcompanhamentoPage } from "./site/pages/PedidoAcompanhamentoPage";
 import { LoginClientePage } from "./site/pages/LoginClientePage";
 import { CadastroClientePage } from "./site/pages/CadastroClientePage";
+import { PoliticaTrocasPage } from "./site/pages/PoliticaTrocasPage";
 
 // Paginas do admin carregam sob demanda - quem visita a loja nunca baixa
 // esse codigo, so quem realmente acessa /admin.
@@ -31,6 +32,7 @@ const ProLaborePage = lazy(() => import("./pages/ProLaborePage").then((m) => ({ 
 const PedidosPage = lazy(() => import("./pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
 const PedidoDetailPage = lazy(() => import("./pages/PedidoDetailPage").then((m) => ({ default: m.PedidoDetailPage })));
 const LotesPage = lazy(() => import("./pages/LotesPage").then((m) => ({ default: m.LotesPage })));
+const CuponsPage = lazy(() => import("./pages/CuponsPage").then((m) => ({ default: m.CuponsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +70,7 @@ export default function App() {
               <Route path="/pedido/:codigoAcesso" element={<PedidoAcompanhamentoPage />} />
               <Route path="/entrar" element={<LoginClientePage />} />
               <Route path="/cadastro" element={<CadastroClientePage />} />
+              <Route path="/politica-de-trocas" element={<PoliticaTrocasPage />} />
             </Route>
 
             {/* painel admin */}
@@ -93,6 +96,7 @@ export default function App() {
                 <Route path="pedidos" element={<PedidosPage />} />
                 <Route path="pedidos/:id" element={<PedidoDetailPage />} />
                 <Route path="lotes" element={<LotesPage />} />
+                <Route path="cupons" element={<CuponsPage />} />
               </Route>
             </Route>
           </Routes>

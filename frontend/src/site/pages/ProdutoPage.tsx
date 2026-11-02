@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useProdutoPublico } from "../hooks/useCatalogo";
+import { useCatalogo, useProdutoPublico } from "../hooks/useCatalogo";
 import { useCart } from "../context/CartContext";
 import { Sprig } from "../components/Sprig";
 import { Loading } from "../components/Loading";
+import { ProductCard } from "../components/ProductCard";
 
 function formatarPreco(valor: string) {
   return Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -13,6 +14,7 @@ export function ProdutoPage() {
   const { id } = useParams();
   const produtoId = Number(id);
   const { data: produto, isLoading, error } = useProdutoPublico(produtoId);
+  const { data: catalogo } = useCatalogo();
   const { adicionar } = useCart();
   const [quantidade, setQuantidade] = useState(1);
   const [adicionado, setAdicionado] = useState(false);
@@ -36,6 +38,10 @@ export function ProdutoPage() {
     setTimeout(() => setAdicionado(false), 2000);
   }
 
+  const relacionados = (catalogo ?? [])
+    .filter((p) => p.id !== produto.id && p.categoria === produto.categoria && !p.emBreve)
+    .slice(0, 3);
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
       <Link to="/catalogo" className="text-sm text-brand-olive hover:text-brand-gold">
@@ -58,6 +64,11 @@ export function ProdutoPage() {
           {produto.ehKit && (
             <span className="absolute right-4 top-4 rounded-full bg-brand-gold px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-dark">
               Kit
+            </span>
+          )}
+          {!produto.emBreve && produto.maisVendido && (
+            <span className="absolute left-4 top-4 rounded-full bg-brand-dark px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-gold">
+              Mais vendido
             </span>
           )}
         </div>
@@ -99,6 +110,17 @@ export function ProdutoPage() {
           )}
         </div>
       </div>
+
+      {relacionados.length > 0 && (
+        <div className="mt-16 border-t border-brand-olive/15 pt-10">
+          <h2 className="mb-6 font-serif-brand text-2xl text-brand-dark">Você também pode gostar</h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {relacionados.map((p) => (
+              <ProductCard key={p.id} produto={p} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

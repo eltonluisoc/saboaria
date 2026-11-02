@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCatalogo, type ProdutoPublico } from "../hooks/useCatalogo";
-import { useCriarCheckout, useFreteFixo, type FormaEntrega } from "../hooks/useCheckout";
+import { useCriarCheckout, useFreteFixo, useValidarCupom, type FormaEntrega } from "../hooks/useCheckout";
 import { useClienteAuth } from "../context/ClienteAuthContext";
 import { Loading } from "../components/Loading";
 import { ApiError } from "../../lib/api";
@@ -19,6 +19,7 @@ export function CheckoutPage() {
   const { data: freteInfo, isLoading: isLoadingFrete } = useFreteFixo();
   const { cliente, loading: carregandoCliente } = useClienteAuth();
   const criarCheckout = useCriarCheckout();
+  const validarCupom = useValidarCupom();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -26,6 +27,9 @@ export function CheckoutPage() {
   const [formaEntrega, setFormaEntrega] = useState<FormaEntrega>("envio");
   const [erro, setErro] = useState<string | null>(null);
   const [camposPreenchidos, setCamposPreenchidos] = useState(false);
+  const [codigoCupom, setCodigoCupom] = useState("");
+  const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; percentual: number } | null>(null);
+  const [erroCupom, setErroCupom] = useState<string | null>(null);
 
   if (isLoading || isLoadingFrete || carregandoCliente) return <Loading />;
 
@@ -44,7 +48,13 @@ export function CheckoutPage() {
     if (produto) linhas.push({ quantidade: item.quantidade, produto });
   }
   const subtotalProdutos = linhas.reduce((soma, l) => soma + Number(l.produto.precoVenda) * l.quantidade, 0);
-  const desconto = cliente ? subtotalProdutos * DESCONTO_CLIENTE_LOGADO : 0;
+  // Cupom e desconto de cliente logado nao acumulam - aplica o maior dos
+  // dois (mesma regra do backend, aqui so pra preview; o valor real e
+  // sempre recalculado em checkoutController.criar).
+  const percentualClienteLogado = cliente ? DESCONTO_CLIENTE_LOGADO : 0;
+  const percentualCupom = cupomAplicado ? cupomAplicado.percentual / 100 : 0;
+  const percentualDesconto = Math.max(percentualClienteLogado, percentualCupom);
+  const desconto = subtotalProdutos * percentualDesconto;
   const freteFixo = freteInfo?.valorFrete ?? 0;
   const frete = formaEntrega === "envio" ? freteFixo : 0;
   const total = subtotalProdutos - desconto + frete;
@@ -68,10 +78,29 @@ export function CheckoutPage() {
         itens: itens.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
         cliente: { nome, email, telefone: telefone || undefined, endereco },
         formaEntrega,
+        cupom: cupomAplicado?.codigo,
       });
       window.location.href = resultado.checkoutUrl;
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Erro ao iniciar o pagamento");
+    }
+  }
+
+  async function handleAplicarCupom() {
+    setErroCupom(null);
+    const codigo = codigoCupom.trim();
+    if (!codigo) return;
+    try {
+      const resultado = await validarCupom.mutateAsync(codigo);
+      if (resultado.valido && resultado.percentualDesconto) {
+        setCupomAplicado({ codigo, percentual: resultado.percentualDesconto });
+      } else {
+        setCupomAplicado(null);
+        setErroCupom(resultado.motivo || "Cupom inválido");
+      }
+    } catch {
+      setCupomAplicado(null);
+      setErroCupom("Não foi possível validar o cupom agora");
     }
   }
 
@@ -124,6 +153,49 @@ export function CheckoutPage() {
               required
             />
 
+            <div>
+              <div className="flex gap-2">
+                <input
+                  className="w-full rounded-md border border-brand-olive/30 bg-white px-4 py-2 text-sm text-brand-brown outline-none focus:border-brand-gold disabled:bg-brand-cream"
+                  placeholder="Cupom de desconto"
+                  value={codigoCupom}
+                  onChange={(e) => {
+                    setCodigoCupom(e.target.value);
+                    if (cupomAplicado) setCupomAplicado(null);
+                    setErroCupom(null);
+                  }}
+                  disabled={!!cupomAplicado}
+                />
+                {cupomAplicado ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCupomAplicado(null);
+                      setCodigoCupom("");
+                    }}
+                    className="whitespace-nowrap rounded-md border border-brand-olive/30 px-4 py-2 text-sm text-brand-brown hover:border-brand-gold"
+                  >
+                    Remover
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAplicarCupom}
+                    disabled={validarCupom.isPending || !codigoCupom.trim()}
+                    className="whitespace-nowrap rounded-md border border-brand-olive/30 px-4 py-2 text-sm text-brand-brown hover:border-brand-gold disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {validarCupom.isPending ? "..." : "Aplicar"}
+                  </button>
+                )}
+              </div>
+              {erroCupom && <p className="mt-1 text-xs text-red-700">{erroCupom}</p>}
+              {cupomAplicado && (
+                <p className="mt-1 text-xs text-emerald-700">
+                  Cupom {cupomAplicado.codigo} aplicado ({cupomAplicado.percentual}% de desconto)
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <p className="text-sm font-medium text-brand-dark">Forma de entrega</p>
               <label className="flex items-center gap-2 text-sm text-brand-brown">
@@ -167,9 +239,13 @@ export function CheckoutPage() {
                 <span className="font-medium">{formatarPreco(Number(produto.precoVenda) * quantidade)}</span>
               </div>
             ))}
-            {cliente && (
+            {percentualDesconto > 0 && (
               <div className="flex justify-between px-4 py-3 text-sm text-emerald-700">
-                <span>Desconto de cliente cadastrado (5%)</span>
+                <span>
+                  {percentualCupom >= percentualClienteLogado && cupomAplicado
+                    ? `Cupom ${cupomAplicado.codigo} (${cupomAplicado.percentual}%)`
+                    : "Desconto de cliente cadastrado (5%)"}
+                </span>
                 <span className="font-medium">− {formatarPreco(desconto)}</span>
               </div>
             )}

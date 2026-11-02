@@ -22,8 +22,24 @@ export type FormaEntrega = "envio" | "retirada";
 
 export function useCriarCheckout() {
   return useMutation({
-    mutationFn: (data: { itens: CheckoutItemInput[]; cliente: ClienteInput; formaEntrega: FormaEntrega }) =>
-      api.post<CheckoutResponse>("/api/checkout", data),
+    mutationFn: (data: {
+      itens: CheckoutItemInput[];
+      cliente: ClienteInput;
+      formaEntrega: FormaEntrega;
+      cupom?: string;
+    }) => api.post<CheckoutResponse>("/api/checkout", data),
+  });
+}
+
+interface ValidarCupomResponse {
+  valido: boolean;
+  percentualDesconto?: number;
+  motivo?: string;
+}
+
+export function useValidarCupom() {
+  return useMutation({
+    mutationFn: (codigo: string) => api.post<ValidarCupomResponse>("/api/checkout/validar-cupom", { codigo }),
   });
 }
 

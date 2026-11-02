@@ -39,6 +39,11 @@ export function ProductCard({ produto }: { produto: ProdutoPublico }) {
               Em breve
             </span>
           )}
+          {!produto.emBreve && produto.maisVendido && (
+            <span className="absolute left-3 top-3 rounded-full bg-brand-dark px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-gold">
+              Mais vendido
+            </span>
+          )}
           {produto.ehKit && (
             <span className="absolute right-3 top-3 rounded-full bg-brand-gold px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-dark">
               Kit

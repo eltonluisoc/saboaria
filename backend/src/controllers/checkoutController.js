@@ -6,6 +6,40 @@ const { frontendUrl, backendUrl, nodeEnv, freteFixo } = require("../config/env")
 const FORMAS_ENTREGA_VALIDAS = ["envio", "retirada"];
 const DESCONTO_CLIENTE_LOGADO = 5;
 
+function normalizarCodigoCupom(codigo) {
+  return typeof codigo === "string" ? codigo.trim().toUpperCase() : "";
+}
+
+// Unica fonte de verdade sobre se um cupom vale: codigo existe, esta ativo,
+// nao passou da validade e nao estourou o uso maximo. Usada tanto pelo
+// endpoint de preview (validarCupom) quanto pelo checkout de verdade
+// (criar) - nunca confia no desconto que o front calculou.
+async function buscarCupomValido(codigo) {
+  const codigoNormalizado = normalizarCodigoCupom(codigo);
+  if (!codigoNormalizado) return { cupom: null, motivo: null };
+
+  const cupom = await prisma.cupom.findUnique({ where: { codigo: codigoNormalizado } });
+  if (!cupom || !cupom.ativo) {
+    return { cupom: null, motivo: "Cupom nao encontrado ou inativo" };
+  }
+  if (cupom.validoAte && cupom.validoAte < new Date()) {
+    return { cupom: null, motivo: "Cupom expirado" };
+  }
+  if (cupom.usoMaximo !== null && cupom.vezesUsado >= cupom.usoMaximo) {
+    return { cupom: null, motivo: "Cupom atingiu o limite de uso" };
+  }
+  return { cupom, motivo: null };
+}
+
+async function validarCupom(req, res) {
+  const { codigo } = req.body || {};
+  const { cupom, motivo } = await buscarCupomValido(codigo);
+  if (!cupom) {
+    return res.json({ valido: false, motivo: motivo || "Cupom invalido" });
+  }
+  return res.json({ valido: true, percentualDesconto: Number(cupom.percentualDesconto) });
+}
+
 function validarCheckoutBody(body) {
   const { itens, cliente, formaEntrega } = body || {};
 
@@ -59,7 +93,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { itens, cliente: dadosCliente, formaEntrega = "envio" } = req.body;
+  const { itens, cliente: dadosCliente, formaEntrega = "envio", cupom: codigoCupom } = req.body;
 
   const produtoIds = itens.map((item) => Number(item.produtoId));
   const produtos = await prisma.produto.findMany({
@@ -103,11 +137,20 @@ async function criar(req, res) {
       });
 
   const valorFreteAplicado = formaEntrega === "retirada" ? 0 : freteFixo;
-  const descontoPercentual = req.cliente ? DESCONTO_CLIENTE_LOGADO : 0;
+
+  // Cupom e desconto de cliente logado nao acumulam - aplica o maior dos
+  // dois. So registra (e consome) o cupom quando ele de fato decidiu o
+  // desconto aplicado; senao o cliente so ganhou o desconto de login mesmo.
+  const descontoCliente = req.cliente ? DESCONTO_CLIENTE_LOGADO : 0;
+  const { cupom } = codigoCupom ? await buscarCupomValido(codigoCupom) : { cupom: null };
+  const descontoCupom = cupom ? Number(cupom.percentualDesconto) : 0;
+  const descontoPercentual = Math.max(descontoCliente, descontoCupom);
+  const cupomId = cupom && descontoCupom >= descontoCliente ? cupom.id : null;
 
   const pedido = await prisma.$transaction((tx) =>
     criarPedidoComItens(tx, {
       clienteId: cliente.id,
+      cupomId,
       origem: "site",
       status: "pendente",
       formaPagamento: null,
@@ -201,4 +244,4 @@ function frete(req, res) {
   return res.json({ valorFrete: freteFixo });
 }
 
-module.exports = { criar, confirmar, frete };
+module.exports = { criar, confirmar, frete, validarCupom };

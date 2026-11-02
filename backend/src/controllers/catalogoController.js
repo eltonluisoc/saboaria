@@ -38,7 +38,18 @@ async function listar(req, res) {
       nome ASC
   `;
 
-  return res.json(produtos);
+  const maisVendidos = await prisma.$queryRaw`
+    SELECT ip.produto_id AS "produtoId", SUM(ip.quantidade) AS total
+    FROM itens_pedido ip
+    JOIN pedidos p ON p.id = ip.pedido_id
+    WHERE p.status = 'pago'
+    GROUP BY ip.produto_id
+    ORDER BY total DESC
+    LIMIT 3
+  `;
+  const idsMaisVendidos = new Set(maisVendidos.map((m) => m.produtoId));
+
+  return res.json(produtos.map((p) => ({ ...p, maisVendido: idsMaisVendidos.has(p.id) })));
 }
 
 async function detalhe(req, res) {
@@ -56,7 +67,18 @@ async function detalhe(req, res) {
     return res.status(404).json({ error: "Produto nao encontrado" });
   }
 
-  return res.json(produto);
+  const maisVendidos = await prisma.$queryRaw`
+    SELECT ip.produto_id AS "produtoId", SUM(ip.quantidade) AS total
+    FROM itens_pedido ip
+    JOIN pedidos p ON p.id = ip.pedido_id
+    WHERE p.status = 'pago'
+    GROUP BY ip.produto_id
+    ORDER BY total DESC
+    LIMIT 3
+  `;
+  const maisVendido = maisVendidos.some((m) => m.produtoId === produto.id);
+
+  return res.json({ ...produto, maisVendido });
 }
 
 module.exports = { listar, detalhe };

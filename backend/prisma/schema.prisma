@@ -208,6 +208,7 @@ model Cliente {
 model Pedido {
   id                   Int      @id @default(autoincrement())
   clienteId            Int?     @map("cliente_id")
+  cupomId              Int?     @map("cupom_id")
   origem               String   @default("manual")
   status               String   @default("pendente")
   valorTotal           Decimal  @map("valor_total") @db.Decimal(12, 2)
@@ -230,10 +231,30 @@ model Pedido {
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   cliente         Cliente?         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  cupom           Cupom?           @relation(fields: [cupomId], references: [id], onDelete: SetNull)
   itens           ItemPedido[]
   rastreioEventos RastreioEvento[]
 
   @@map("pedidos")
+}
+
+// Codigo promocional opcional, distinto do desconto automatico de cliente
+// logado (checkoutController.js) - os dois nao acumulam, so o maior
+// percentual e aplicado. ativo=false desativa sem apagar o historico
+// (mesmo padrao de Produto.ativo).
+model Cupom {
+  id                 Int       @id @default(autoincrement())
+  codigo             String    @unique
+  percentualDesconto Decimal   @map("percentual_desconto") @db.Decimal(5, 2)
+  ativo              Boolean   @default(true)
+  validoAte          DateTime? @map("valido_ate")
+  usoMaximo          Int?      @map("uso_maximo")
+  vezesUsado         Int       @default(0) @map("vezes_usado")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  pedidos Pedido[]
+
+  @@map("cupons")
 }
 
 model RastreioEvento {

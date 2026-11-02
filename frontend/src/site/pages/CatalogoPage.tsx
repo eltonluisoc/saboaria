@@ -137,6 +137,9 @@ export function CatalogoPage() {
         <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 border-t border-brand-olive/15 pt-8 text-xs uppercase tracking-wide text-brand-brown/60">
           <span>Pagamento seguro via Mercado Pago</span>
           <span>Produção 100% artesanal, feito à mão</span>
+          <Link to="/politica-de-trocas" className="hover:text-brand-gold">
+            Troca em até 7 dias
+          </Link>
         </div>
       )}
 

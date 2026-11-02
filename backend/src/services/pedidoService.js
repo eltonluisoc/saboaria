@@ -32,6 +32,7 @@ async function criarPedidoComItens(
   tx,
   {
     clienteId,
+    cupomId = null,
     origem,
     status,
     formaPagamento,
@@ -70,6 +71,7 @@ async function criarPedidoComItens(
   const novoPedido = await tx.pedido.create({
     data: {
       clienteId: clienteId ? Number(clienteId) : null,
+      cupomId: cupomId ? Number(cupomId) : null,
       origem,
       status,
       valorTotal,
@@ -142,6 +144,12 @@ async function confirmarPagamento(paymentId) {
     if (precisaDecrementarEstoque) {
       for (const item of pedido.itens) {
         await baixarEstoqueItem(tx, item.produtoId, item.quantidade);
+      }
+      if (pedido.cupomId) {
+        await tx.cupom.update({
+          where: { id: pedido.cupomId },
+          data: { vezesUsado: { increment: 1 } },
+        });
       }
     }
 
