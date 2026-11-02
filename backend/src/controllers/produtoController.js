@@ -66,7 +66,7 @@ function parseId(param) {
 }
 
 function validarProdutoBody(body, { partial = false } = {}) {
-  const { nome, precoVenda, descricao, ativo, emBreve, ehKit, imagemUrl, pesoUnidadeGramas } = body || {};
+  const { nome, precoVenda, descricao, ativo, emBreve, ehKit, imagemUrl, pesoUnidadeGramas, categoria } = body || {};
 
   if (!partial || nome !== undefined) {
     if (typeof nome !== "string" || !nome.trim()) {
@@ -108,6 +108,10 @@ function validarProdutoBody(body, { partial = false } = {}) {
     }
   }
 
+  if (categoria !== undefined && categoria !== null && typeof categoria !== "string") {
+    return "Campo 'categoria' deve ser texto";
+  }
+
   return null;
 }
 
@@ -117,7 +121,7 @@ async function criar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, descricao, precoVenda, ativo, emBreve, ehKit, imagemUrl, pesoUnidadeGramas } = req.body;
+  const { nome, descricao, precoVenda, ativo, emBreve, ehKit, imagemUrl, pesoUnidadeGramas, categoria } = req.body;
 
   const produto = await prisma.produto.create({
     data: {
@@ -129,6 +133,7 @@ async function criar(req, res) {
       ativo: ativo === undefined ? true : ativo,
       emBreve: emBreve === undefined ? false : emBreve,
       ehKit: ehKit === undefined ? false : ehKit,
+      categoria: categoria ? categoria.trim() : null,
     },
   });
 
@@ -175,7 +180,7 @@ async function editar(req, res) {
     return res.status(400).json({ error: erro });
   }
 
-  const { nome, descricao, precoVenda, ativo, emBreve, ehKit, imagemUrl, pesoUnidadeGramas } = req.body;
+  const { nome, descricao, precoVenda, ativo, emBreve, ehKit, imagemUrl, pesoUnidadeGramas, categoria } = req.body;
   const data = {};
   if (nome !== undefined) data.nome = nome.trim();
   if (descricao !== undefined) data.descricao = descricao ? descricao.trim() : null;
@@ -185,6 +190,7 @@ async function editar(req, res) {
   if (ehKit !== undefined) data.ehKit = ehKit;
   if (imagemUrl !== undefined) data.imagemUrl = imagemUrl ? imagemUrl.trim() : null;
   if (pesoUnidadeGramas !== undefined) data.pesoUnidadeGramas = pesoUnidadeGramas || null;
+  if (categoria !== undefined) data.categoria = categoria ? categoria.trim() : null;
 
   try {
     const produto = await prisma.$transaction(async (tx) => {

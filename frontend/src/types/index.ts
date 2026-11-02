@@ -38,6 +38,7 @@ export interface Produto {
   ativo: boolean;
   emBreve: boolean;
   ehKit: boolean;
+  categoria: string | null;
   estoqueDisponivelKit: number | null;
   createdAt: string;
   updatedAt: string;

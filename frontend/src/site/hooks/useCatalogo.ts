@@ -9,6 +9,7 @@ export interface ProdutoPublico {
   precoVenda: string;
   emBreve: boolean;
   ehKit: boolean;
+  categoria: string | null;
 }
 
 export function useCatalogo() {

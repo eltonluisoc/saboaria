@@ -26,6 +26,7 @@ export interface ProdutoInput {
   ativo?: boolean;
   emBreve?: boolean;
   ehKit?: boolean;
+  categoria?: string | null;
 }
 
 export function useCriarProduto() {

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCriarProduto, useEditarProduto, useProdutos, useRemoverProduto } from "../hooks/useProdutos";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
+import { Input, Select } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { Table } from "../components/ui/Table";
 import { Spinner, ErrorBanner } from "../components/ui/Spinner";
@@ -161,12 +161,15 @@ function DetalhesCustoModal({ produto, onClose }: { produto: Produto; onClose: (
   );
 }
 
+const CATEGORIAS = ["Sabonetes", "Casa", "Carro", "Corpo", "Kits", "Outros"];
+
 function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClose: () => void }) {
   const [nome, setNome] = useState(produto?.nome ?? "");
   const [descricao, setDescricao] = useState(produto?.descricao ?? "");
   const [imagemUrl, setImagemUrl] = useState(produto?.imagemUrl ?? "");
   const [precoVenda, setPrecoVenda] = useState(produto?.precoVenda ?? "");
   const [pesoUnidadeGramas, setPesoUnidadeGramas] = useState(produto?.pesoUnidadeGramas ?? "");
+  const [categoria, setCategoria] = useState(produto?.categoria ?? "");
   const [ativo, setAtivo] = useState(produto?.ativo ?? true);
   const [emBreve, setEmBreve] = useState(produto?.emBreve ?? false);
   const [ehKit, setEhKit] = useState(produto?.ehKit ?? false);
@@ -185,6 +188,7 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
         imagemUrl: imagemUrl || null,
         precoVenda: Number(precoVenda),
         pesoUnidadeGramas: pesoUnidadeGramas ? Number(pesoUnidadeGramas) : null,
+        categoria: categoria || null,
         ativo,
         emBreve,
         ehKit,
@@ -243,6 +247,14 @@ function ProdutoFormModal({ produto, onClose }: { produto: Produto | null; onClo
           peso da unidade converte isso pro custo por sabonete. Trocar de molde é só atualizar
           esse peso, sem mexer na receita.
         </p>
+        <Select label="Categoria (filtro no site)" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+          <option value="">— sem categoria —</option>
+          {CATEGORIAS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </Select>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
           Ativo (visível no site quando o catálogo existir)

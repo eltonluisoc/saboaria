@@ -8,6 +8,7 @@ const CAMPOS_PUBLICOS = {
   precoVenda: true,
   emBreve: true,
   ehKit: true,
+  categoria: true,
 };
 
 function parseId(param) {
@@ -15,20 +16,24 @@ function parseId(param) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-// Saboaria e sabonete primeiro, sempre: sabonete em barra, depois sabonete
-// liquido, depois o resto da colecao - nessa ordem em qualquer lista
-// publica (catalogo e Home usam o mesmo endpoint).
+// Saboaria e sabonete primeiro, sempre: Sabonetes, depois Casa, Carro,
+// Corpo, Kits, nessa ordem, em qualquer lista publica (catalogo e Home
+// usam o mesmo endpoint). Ordena pela categoria (campo de verdade) em vez
+// de casar o nome - categoria nova cai no fim ate alguem decidir a ordem.
 async function listar(req, res) {
   const produtos = await prisma.$queryRaw`
     SELECT id, nome, descricao, imagem_url AS "imagemUrl", preco_venda AS "precoVenda",
-      em_breve AS "emBreve", eh_kit AS "ehKit"
+      em_breve AS "emBreve", eh_kit AS "ehKit", categoria
     FROM produtos
     WHERE ativo = true
     ORDER BY
-      CASE
-        WHEN nome ILIKE 'Sabonete Artesanal%' THEN 0
-        WHEN nome ILIKE 'Sabonete Líquido%' THEN 1
-        ELSE 2
+      CASE categoria
+        WHEN 'Sabonetes' THEN 0
+        WHEN 'Casa' THEN 1
+        WHEN 'Carro' THEN 2
+        WHEN 'Corpo' THEN 3
+        WHEN 'Kits' THEN 4
+        ELSE 5
       END,
       nome ASC
   `;

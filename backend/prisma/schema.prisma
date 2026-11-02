@@ -59,6 +59,7 @@ model Produto {
   ativo             Boolean  @default(true)
   emBreve           Boolean  @default(false) @map("em_breve")
   ehKit             Boolean  @default(false) @map("eh_kit")
+  categoria         String?  @map("categoria")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
