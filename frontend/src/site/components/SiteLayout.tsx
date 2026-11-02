@@ -87,11 +87,9 @@ export function SiteLayout() {
               ) : (
                 <NavLink
                   to="/entrar"
-                  className={({ isActive }) =>
-                    `-mx-2 rounded px-2 py-2 ${isActive ? "text-brand-gold" : "hover:text-brand-gold"}`
-                  }
+                  className="rounded-full bg-brand-gold px-4 py-2 text-xs font-bold uppercase tracking-wide text-brand-dark shadow-sm transition-transform hover:scale-105 hover:bg-brand-gold/90"
                 >
-                  Entrar
+                  Entrar e ganhe 5%
                 </NavLink>
               ))}
             <Link to="/carrinho" className="-m-2 flex items-center gap-1 p-2 hover:text-brand-gold">
