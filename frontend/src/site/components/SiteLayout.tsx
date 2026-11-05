@@ -5,6 +5,7 @@ import { useCatalogo } from "../hooks/useCatalogo";
 import { useClienteAuth } from "../context/ClienteAuthContext";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { WhatsAppButton } from "./WhatsAppButton";
+import { LOJA } from "../lojaInfo";
 
 const VALORES = ["Artesanal", "Natural", "Ancestral", "Sustentável", "Feito com amor"];
 
@@ -119,10 +120,26 @@ export function SiteLayout() {
               <span key={v}>{v}</span>
             ))}
           </div>
-          <Link to="/politica-de-trocas" className="text-xs text-brand-cream/60 hover:text-brand-gold">
-            Política de troca
-          </Link>
-          <p className="text-xs text-brand-cream/50">© {new Date().getFullYear()} Lud&apos;E Saboaria Artesanal</p>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <Link to="/politica-de-trocas" className="text-xs text-brand-cream/60 hover:text-brand-gold">
+              Política de troca
+            </Link>
+            <Link to="/politica-de-privacidade" className="text-xs text-brand-cream/60 hover:text-brand-gold">
+              Política de privacidade
+            </Link>
+          </div>
+          <div className="space-y-0.5 text-xs text-brand-cream/50">
+            <p>
+              {LOJA.nomeResponsavel ? `${LOJA.nomeResponsavel} — ` : ""}CPF {LOJA.cpf}
+            </p>
+            <p>{LOJA.endereco}</p>
+            <p>
+              <a href={`mailto:${LOJA.email}`} className="hover:text-brand-gold">
+                {LOJA.email}
+              </a>
+            </p>
+          </div>
+          <p className="text-xs text-brand-cream/50">© {new Date().getFullYear()} {LOJA.nomeFantasia}</p>
         </div>
       </footer>
 

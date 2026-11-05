@@ -17,6 +17,7 @@ import { PedidoAcompanhamentoPage } from "./site/pages/PedidoAcompanhamentoPage"
 import { LoginClientePage } from "./site/pages/LoginClientePage";
 import { CadastroClientePage } from "./site/pages/CadastroClientePage";
 import { PoliticaTrocasPage } from "./site/pages/PoliticaTrocasPage";
+import { PoliticaPrivacidadePage } from "./site/pages/PoliticaPrivacidadePage";
 
 // Paginas do admin carregam sob demanda - quem visita a loja nunca baixa
 // esse codigo, so quem realmente acessa /admin.
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="/entrar" element={<LoginClientePage />} />
               <Route path="/cadastro" element={<CadastroClientePage />} />
               <Route path="/politica-de-trocas" element={<PoliticaTrocasPage />} />
+              <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
             </Route>
 
             {/* painel admin */}

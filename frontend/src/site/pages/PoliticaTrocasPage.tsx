@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LOJA } from "../lojaInfo";
 
 export function PoliticaTrocasPage() {
   return (
@@ -24,8 +25,11 @@ export function PoliticaTrocasPage() {
         <div>
           <h2 className="mb-2 font-serif-brand text-xl text-brand-dark">Como solicitar</h2>
           <p>
-            Entre em contato pelo WhatsApp (botão no canto da tela) ou pelo e-mail informando o número do pedido e o
-            motivo da devolução. Vamos combinar juntos a forma de envio do produto de volta.
+            Entre em contato pelo WhatsApp (botão no canto da tela) ou pelo e-mail{" "}
+            <a href={`mailto:${LOJA.email}`} className="text-brand-olive underline hover:text-brand-gold">
+              {LOJA.email}
+            </a>{" "}
+            informando o número do pedido e o motivo da devolução. Vamos combinar juntos a forma de envio do produto de volta.
           </p>
         </div>
 
